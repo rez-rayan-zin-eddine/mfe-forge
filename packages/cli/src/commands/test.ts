@@ -35,7 +35,7 @@ export const testCommand = new Command('test')
           stdio: 'inherit',
         })
       }
-    } catch (error: any) {
+    } catch {
       console.error(chalk.red('Tests failed'))
       process.exit(1)
     }
