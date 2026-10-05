@@ -6,6 +6,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import { execa } from 'execa'
 import { copyTemplate } from '../utils/files.js'
+import { execBinCommand, runScriptCommand } from '../utils/package-manager.js'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const pkg = require('../../package.json')
@@ -124,8 +125,10 @@ export const initCommand = new Command('init')
       console.log(chalk.green('\n✅ Project initialized successfully!'))
       console.log(chalk.cyan(`\nNext steps:`))
       console.log(`  cd ${name}`)
-      console.log(`  ${options.packageManager} mfe generate app dashboard`)
-      console.log(`  ${options.packageManager} dev\n`)
+      if (options.skipInstall) console.log(`  ${options.packageManager} install`)
+      console.log(`  ${execBinCommand(options.packageManager, 'mfe')} generate host ${name}/host`)
+      console.log(`  ${execBinCommand(options.packageManager, 'mfe')} generate app ${name}/dashboard`)
+      console.log(`  ${runScriptCommand(options.packageManager, 'dev')}\n`)
     } catch (error: any) {
       spinner.fail('Initialization failed')
       console.error(chalk.red(error.message))

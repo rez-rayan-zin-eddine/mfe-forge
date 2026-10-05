@@ -17,6 +17,7 @@ import {
 } from '../utils/files.js'
 import { createRequire } from 'module'
 import { replaceRemotes } from './sync.js'
+import { runScriptCommand, workspaceRunCommand } from '../utils/package-manager.js'
 const require = createRequire(import.meta.url)
 const pkg = require('../../package.json')
 
@@ -153,7 +154,7 @@ export const generateCommand = new Command('generate')
           pkg.scripts = pkg.scripts || {}
           if (!pkg.scripts[scriptKey]) {
             pkg.scripts[scriptKey] =
-              `${context.config.defaults.packageManager} --filter ${vars.packageName} dev`
+              workspaceRunCommand(context.config.defaults.packageManager, vars.packageName, 'dev')
           }
         })
       }
@@ -163,7 +164,7 @@ export const generateCommand = new Command('generate')
       console.log(chalk.cyan('\nNext steps:'))
       console.log(`  ${context.config.defaults.packageManager} install`)
       console.log(
-        `  ${context.config.defaults.packageManager} run dev:${fullName.replace(/\//g, ':')}`
+        `  ${runScriptCommand(context.config.defaults.packageManager, `dev:${fullName.replace(/\//g, ':')}`)}`
       )
     } catch (error: any) {
       spinner.fail('Generation failed')

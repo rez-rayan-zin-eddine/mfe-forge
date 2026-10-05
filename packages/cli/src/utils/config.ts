@@ -380,26 +380,53 @@ export function parseTypeScriptConfig(file: string): Record<string, unknown> | n
   return result as Record<string, unknown>
 }
 
+function unwrapDefaultExport(config: unknown): Record<string, unknown> {
+  if (config && typeof config === 'object' && 'default' in config) {
+    const inner = (config as { default: unknown }).default
+    if (inner && typeof inner === 'object') return inner as Record<string, unknown>
+  }
+  return (config ?? {}) as Record<string, unknown>
+}
+
 export function loadConfig(cwd = process.cwd()): MFEConfig {
   let rawConfig: Record<string, unknown> = {}
-  const tsConfigPath = path.join(cwd, 'mfeforge.config.ts')
-  if (fs.existsSync(tsConfigPath)) {
+  let loaded = false
+
+  // Object-literal configs (the shape written by `init` and `config --set`) are
+  // evaluated statically, so ESM/CJS loading differences across Node versions
+  // cannot cause them to be skipped.
+  for (const file of ['mfeforge.config.ts', 'mfeforge.config.js']) {
+    const configPath = path.join(cwd, file)
+    if (!fs.existsSync(configPath)) continue
     try {
-      const tsConfig = parseTypeScriptConfig(tsConfigPath)
-      if (tsConfig) rawConfig = tsConfig
+      const parsed = parseTypeScriptConfig(configPath)
+      if (parsed) {
+        rawConfig = parsed
+        loaded = true
+      }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.warn(
-        chalk.yellow(
-          `Warning: Failed to load ${tsConfigPath}: ${message}. Falling back to default configuration.`
+      if (file.endsWith('.ts')) {
+        const message = err instanceof Error ? err.message : String(err)
+        console.warn(
+          chalk.yellow(
+            `Warning: Failed to load ${configPath}: ${message}. Falling back to default configuration.`
+          )
         )
-      )
+        loaded = true
+      }
+      // .js configs that are not plain object literals fall through to cosmiconfig
     }
-  } else {
+    break
+  }
+
+  if (!loaded) {
     try {
       const result = explorer.search(cwd)
-      if (result && !result.isEmpty && result.config) rawConfig = result.config
-    } catch { /* invalid config is reported by validation below */ }
+      if (result && !result.isEmpty && result.config) rawConfig = unwrapDefaultExport(result.config)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.warn(chalk.yellow(`Warning: Failed to load MFE Forge configuration: ${message}. Using defaults.`))
+    }
   }
 
   // Always inject a name fallback so the schema never fails on a missing name
