@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create, type Mutate, type StoreApi, type UseBoundStore } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 
 /**
@@ -62,15 +62,17 @@ export const useGlobalStore = create<GlobalState>()(
  * ```
  */
 type Widen<T> = T extends Array<infer Item> ? ([Item] extends [never] ? unknown[] : Item[]) : T extends object ? { [K in keyof T]: Widen<T[K]> } : T
-type ScopedStore<T extends object> = Omit<ReturnType<typeof create<T & { reset: () => void }>>, 'setState' | 'getState'> & {
-  setState: (state: Partial<Widen<T>>) => void
-  getState: () => Widen<T> & { reset: () => void }
-}
+type ScopedState<T> = Widen<T> & { reset: () => void }
+type ScopedStore<T extends object> = UseBoundStore<
+  Mutate<StoreApi<ScopedState<T>>, [['zustand/subscribeWithSelector', never]]>
+>
 
 export function createScopedStore<T extends object>(scope: string, initialState: T): ScopedStore<T> {
   if (!scope.trim()) throw new Error('Store scope must not be empty')
-  const store = create<T & { reset: () => void }>()(subscribeWithSelector((set) => ({ ...initialState, reset: () => set(initialState) })))
-  return store as unknown as ScopedStore<T>
+  const initial = initialState as unknown as Widen<T>
+  return create<ScopedState<T>>()(
+    subscribeWithSelector((set) => ({ ...initial, reset: () => set(initial as Partial<ScopedState<T>>) }) as ScopedState<T>)
+  )
 }
 
 /**
@@ -88,16 +90,22 @@ export function clearScopedStore(scope?: string): void {
  * Emits a sync event whenever the store state changes, enabling
  * other MFEs to react to state updates.
  *
- * @param store - Zustand store with `subscribe` method
+ * @param store - Any Zustand store (global, scoped, or vanilla)
  * @param eventBus - EventBus instance to emit sync events on
  * @param eventPrefix - Prefix for the sync event name (e.g., 'cart' → 'cart:sync')
  * @returns Unsubscribe function
  */
+/** Minimal store contract accepted by `syncStoreAcrossMFEs` (any Zustand store satisfies it). */
+export interface SyncableStore<T> {
+  getState(): T
+  subscribe(listener: (state: T) => void): () => void
+}
+
 export function syncStoreAcrossMFEs<T>(
-  store: { subscribe: (selector: (state: T) => T, callback: (state: T) => void) => () => void },
+  store: SyncableStore<T>,
   eventBus: { emit: (event: string, payload: { state: T; origin: string }) => void },
   eventPrefix: string,
   origin = `store-${Math.random().toString(36).slice(2)}`
 ) {
-  return store.subscribe((state: T) => state, (state: T) => { eventBus.emit(`${eventPrefix}:sync`, { state, origin }) })
+  return store.subscribe((state: T) => { eventBus.emit(`${eventPrefix}:sync`, { state, origin }) })
 }
