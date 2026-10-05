@@ -31,7 +31,7 @@ export async function findAvailablePort(
           return port
         }
         currentPort = port + 1
-      } catch (e) {
+      } catch {
         break
       }
     } else {
@@ -46,6 +46,10 @@ export async function findAvailablePort(
  * Scans the apps directory to find all ports currently in use.
  * Checks both `vite.config.ts` files (for `port:` directives) and
  * `package.json` scripts (for `--port` flags).
+ *
+ * Limitation: only literal port numbers are detected. Ports resolved at
+ * runtime (e.g. `process.env.PORT || 3000` or values read from variables)
+ * are not discovered and may collide with newly allocated ports.
  *
  * @param appsDir - Absolute path to the apps directory
  * @returns Set of port numbers currently in use

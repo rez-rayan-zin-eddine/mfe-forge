@@ -5,5 +5,10 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: { reporter: ['text', 'html'] },
+    server: {
+      deps: {
+        inline: ['zod'],
+      },
+    },
   },
 })

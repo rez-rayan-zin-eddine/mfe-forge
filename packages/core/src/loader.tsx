@@ -11,15 +11,50 @@ import type { RemoteComponentProps } from './types.js'
  * <RemoteLoader remoteName="checkoutApp" moduleName="App" />
  * ```
  */
+export const MAX_CACHE_SIZE = 100
+
 const remoteComponentCache = new Map<string, React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>>()
+
+/** Returns the current number of cached remote components. */
+export function getRemoteComponentCacheSize(): number {
+  return remoteComponentCache.size
+}
+
+/** Clears all cached remote components from memory. */
+export function clearRemoteComponentCache(): void {
+  remoteComponentCache.clear()
+}
+
+/** Checks whether a specific remote component is currently cached. */
+export function hasRemoteComponent(remoteName: string, moduleName = 'App'): boolean {
+  return remoteComponentCache.has(`${remoteName}/${moduleName}`)
+}
+
+/** Evicts a specific remote component from the cache. Returns true if an element was evicted. */
+export function evictRemoteComponent(remoteName: string, moduleName = 'App'): boolean {
+  return remoteComponentCache.delete(`${remoteName}/${moduleName}`)
+}
 
 function getRemoteComponent(remoteName: string, moduleName: string) {
   const key = `${remoteName}/${moduleName}`
   let component = remoteComponentCache.get(key)
-  if (!component) {
-    component = lazy(() => import(/* @vite-ignore */ key))
+  if (component) {
+    // Refresh LRU ordering on cache hit
+    remoteComponentCache.delete(key)
     remoteComponentCache.set(key, component)
+    return component
   }
+
+  // Evict least recently used entry if exceeding capacity
+  if (remoteComponentCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = remoteComponentCache.keys().next().value
+    if (oldestKey !== undefined) {
+      remoteComponentCache.delete(oldestKey)
+    }
+  }
+
+  component = lazy(() => import(/* @vite-ignore */ key))
+  remoteComponentCache.set(key, component)
   return component
 }
 

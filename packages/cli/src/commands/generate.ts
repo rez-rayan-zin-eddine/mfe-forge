@@ -16,6 +16,7 @@ import {
   injectIntoFile,
 } from '../utils/files.js'
 import { createRequire } from 'module'
+import { replaceRemotes } from './sync.js'
 const require = createRequire(import.meta.url)
 const pkg = require('../../package.json')
 
@@ -23,7 +24,7 @@ export const generateCommand = new Command('generate')
   .alias('g')
   .description('Generate apps, hosts, packages, or design systems')
   .argument('<type>', 'Type to generate: app, host, package, design-system, library')
-  .argument('[name]', 'Name of the item (use \"scope/name\" for scoped apps)')
+  .argument('[name]', 'Name of the item (use "scope/name" for scoped apps)')
   .option('--port <port>', 'Development server port')
   .option('--host <host>', 'Target host for app registration')
   .option('--scope <scope>', 'Scope/team for the app')
@@ -192,21 +193,27 @@ async function postGenerateHost(context: any, vars: any, targetDir: string) {
   const declarationsPath = path.join(targetDir, 'src/remotes/declarations.d.ts')
 
   if (apps.length > 0 && (await fs.pathExists(viteConfigPath))) {
-    let remotesConfig = ''
-    let declarations = '// Auto-generated remote declarations\n'
-
-    for (const app of apps) {
-      remotesConfig += `        ${app.federationName}: "http://localhost:${app.port}/assets/remoteEntry.js",\n`
-      declarations += `declare module '${app.federationName}/App' {\n  import React from 'react'\n  const App: React.ComponentType<any>\n  export default App\n}\n\n`
-    }
+    const remotesConfig = apps
+      .map(
+        (app) =>
+          `        ${app.federationName}: 'http://localhost:${app.port}/assets/remoteEntry.js',\n`
+      )
+      .join('')
+    const declarations =
+      '// Auto-generated remote declarations\n' +
+      apps
+        .map(
+          (app) =>
+            `\ndeclare module '${app.federationName}/App' {\n  import React from 'react'\n  const App: React.ComponentType<Record<string, unknown>>\n  export default App\n}\n`
+        )
+        .join('')
 
     const content = await fs.readFile(viteConfigPath, 'utf-8')
-    if (content.includes('remotes: {')) {
-      const newContent = content.replace(
-        /remotes:\s*\{[^}]*\}(,)?/s,
-        `remotes: {\n${remotesConfig}      },`
-      )
+    const { updated: newContent, matched } = replaceRemotes(content, remotesConfig)
+    if (matched) {
       await fs.writeFile(viteConfigPath, newContent)
+    } else {
+      console.warn(chalk.yellow(`Warning: "remotes: {" section not found in ${viteConfigPath}`))
     }
 
     await fs.writeFile(declarationsPath, declarations)
@@ -224,12 +231,57 @@ async function registerInHost(
   const declarations = path.join(hostDir, 'src/remotes/declarations.d.ts')
 
   if (await fs.pathExists(viteConfig)) {
-    const remoteEntry = `        ${appCamel}App: "http://localhost:${port}/assets/remoteEntry.js",`
-    await injectIntoFile(viteConfig, 'remotes: {', `\n${remoteEntry}`, 'after')
+    const content = await fs.readFile(viteConfig, 'utf-8')
+    const remoteName = `${appCamel}App`
+    const remotesBlockMatch = content.match(/remotes:\s*\{([\s\S]*?)\}/)
+    const remotePattern = new RegExp(
+      `(?<![\\w-])(?:['"\`]${remoteName}['"\`]|${remoteName})\\s*:`
+    )
+
+    if (remotesBlockMatch && remotePattern.test(remotesBlockMatch[1])) {
+      // Remote already registered; skip duplicate injection
+    } else if (!remotesBlockMatch) {
+      console.warn(chalk.yellow(`Warning: "remotes: {" section not found in ${viteConfig}`))
+    } else {
+      const scope = hostName.split('/')[0]
+      const remotes = discoverApps(context).filter(
+        (app) => app.scope === scope && app.name !== hostName
+      )
+      const entries = remotes
+        .map(
+          (app) =>
+            `        ${app.federationName}: 'http://localhost:${app.port}/assets/remoteEntry.js',\n`
+        )
+        .join('')
+
+      const { updated: newContent, matched } = replaceRemotes(content, entries)
+      if (matched) {
+        await fs.writeFile(viteConfig, newContent)
+      } else {
+        const remoteEntry = `        ${remoteName}: 'http://localhost:${port}/assets/remoteEntry.js',`
+        await injectIntoFile(viteConfig, 'remotes: {', `\n${remoteEntry}`, 'after')
+      }
+    }
   }
 
   if (await fs.pathExists(declarations)) {
-    const decl = `\ndeclare module '${appCamel}App/App' {\n  import React from 'react'\n  const App: React.ComponentType<any>\n  export default App\n}\n`
-    await fs.appendFile(declarations, decl)
+    const declContent = await fs.readFile(declarations, 'utf-8')
+    const declRegex = new RegExp(`declare\\s+module\\s+['"]${appCamel}App/App['"]`)
+    if (!declRegex.test(declContent)) {
+      const scope = hostName.split('/')[0]
+      const remotes = discoverApps(context).filter(
+        (app) => app.scope === scope && app.name !== hostName
+      )
+      const declHeader = '// Auto-generated remote declarations\n'
+      const decl =
+        declHeader +
+        remotes
+          .map(
+            (app) =>
+              `\ndeclare module '${app.federationName}/App' {\n  import React from 'react'\n  const App: React.ComponentType<Record<string, unknown>>\n  export default App\n}\n`
+          )
+          .join('')
+      await fs.writeFile(declarations, decl)
+    }
   }
 }

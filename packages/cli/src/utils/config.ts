@@ -2,6 +2,7 @@ import { cosmiconfigSync } from 'cosmiconfig'
 import { z } from 'zod'
 import path from 'path'
 import fs from 'fs-extra'
+import chalk from 'chalk'
 import type { MFEConfig } from '../types/index.js'
 
 const configSchema = z.object({
@@ -83,20 +84,318 @@ function getConfigFilePath(cwd: string): string {
   return path.join(cwd, 'mfeforge.config.ts')
 }
 
-function parseTypeScriptConfig(file: string): Record<string, unknown> | null {
+/**
+ * Strips TypeScript 'as' and 'satisfies' type assertions from code while
+ * properly tracking nested bracket depths (<...>, {...}, [...], (...)) so that
+ * generic types with commas (e.g. Record<string, unknown>) and unions/intersections
+ * do not cause premature truncation. Preserves string literals and object properties.
+ */
+export function stripTypeAssertions(code: string): string {
+  const tokenRegex =
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\b(?:as\s+const|as|satisfies)\b)/g
+
+  let result = ''
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = tokenRegex.exec(code)) !== null) {
+    const [, stringLiteral, keyword] = match
+    const matchStart = match.index
+
+    if (stringLiteral) {
+      result += code.slice(lastIndex, matchStart) + stringLiteral
+      lastIndex = tokenRegex.lastIndex
+      continue
+    }
+
+    if (keyword === 'as const' || /^as\s+const$/.test(keyword)) {
+      result += code.slice(lastIndex, matchStart)
+      lastIndex = tokenRegex.lastIndex
+      continue
+    }
+
+    let i = tokenRegex.lastIndex
+
+    while (i < code.length && /\s/.test(code[i])) {
+      i++
+    }
+
+    const nextChar = code[i]
+    if (
+      !nextChar ||
+      nextChar === ':' ||
+      nextChar === '=' ||
+      nextChar === ';' ||
+      nextChar === ',' ||
+      nextChar === '}' ||
+      nextChar === ')' ||
+      nextChar === ']'
+    ) {
+      continue
+    }
+
+    result += code.slice(lastIndex, matchStart)
+
+    let angleDepth = 0
+    let braceDepth = 0
+    let parenDepth = 0
+    let bracketDepth = 0
+    let lastNonWs = ''
+
+    while (i < code.length) {
+      const char = code[i]
+
+      if (
+        angleDepth === 0 &&
+        braceDepth === 0 &&
+        parenDepth === 0 &&
+        bracketDepth === 0
+      ) {
+        if (
+          char === ';' ||
+          char === ',' ||
+          char === '}' ||
+          char === ')' ||
+          char === ']'
+        ) {
+          break
+        }
+        if (char === '\n') {
+          // Check if this newline is followed or preceded by a type continuation (| or &)
+          let nextNonWs = i + 1
+          while (nextNonWs < code.length) {
+            if (/\s/.test(code[nextNonWs])) {
+              nextNonWs++
+            } else if (code[nextNonWs] === '/' && code[nextNonWs + 1] === '/') {
+              nextNonWs += 2
+              while (nextNonWs < code.length && code[nextNonWs] !== '\n') {
+                nextNonWs++
+              }
+            } else if (code[nextNonWs] === '/' && code[nextNonWs + 1] === '*') {
+              nextNonWs += 2
+              while (
+                nextNonWs < code.length &&
+                !(code[nextNonWs - 1] === '*' && code[nextNonWs] === '/')
+              ) {
+                nextNonWs++
+              }
+              nextNonWs++
+            } else {
+              break
+            }
+          }
+          const nextChar = code[nextNonWs]
+          if (
+            nextChar !== '|' &&
+            nextChar !== '&' &&
+            lastNonWs !== '|' &&
+            lastNonWs !== '&'
+          ) {
+            break
+          }
+        }
+      }
+
+      if (char === '=' && code[i + 1] === '>') {
+        i += 2
+        lastNonWs = '>'
+        continue
+      }
+
+      if (char === '<') {
+        angleDepth++
+      } else if (char === '>') {
+        if (angleDepth > 0) angleDepth--; else break
+      } else if (char === '{') {
+        braceDepth++
+      } else if (char === '}') {
+        if (braceDepth > 0) braceDepth--; else break
+      } else if (char === '(') {
+        parenDepth++
+      } else if (char === ')') {
+        if (parenDepth > 0) parenDepth--; else break
+      } else if (char === '[') {
+        bracketDepth++
+      } else if (char === ']') {
+        if (bracketDepth > 0) bracketDepth--; else break
+      } else if (char === '"' || char === "'" || char === '`') {
+        const quote = char
+        i++
+        while (i < code.length && code[i] !== quote) {
+          if (code[i] === '\\') i++
+          i++
+        }
+        lastNonWs = quote
+      }
+
+      if (!/\s/.test(char)) {
+        lastNonWs = char
+      }
+
+      i++
+    }
+
+    lastIndex = i
+    tokenRegex.lastIndex = i
+  }
+
+  result += code.slice(lastIndex)
+  return result
+}
+
+/**
+ * Strips generic type parameters from defineConfig<...>(...) calls
+ * while properly tracking nested angle bracket depth (<...>), braces, parens,
+ * brackets, and string literals.
+ */
+export function stripDefineConfigGenerics(code: string): string {
+  const tokenRegex =
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\bdefineConfig\s*<)/g
+
+  let result = ''
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = tokenRegex.exec(code)) !== null) {
+    const [, stringLiteral, keyword] = match
+    const matchStart = match.index
+
+    if (stringLiteral) {
+      result += code.slice(lastIndex, matchStart) + stringLiteral
+      lastIndex = tokenRegex.lastIndex
+      continue
+    }
+
+    if (keyword) {
+      const angleStart = matchStart + keyword.lastIndexOf('<')
+      let i = angleStart
+      let angleDepth = 0
+      let braceDepth = 0
+      let parenDepth = 0
+      let bracketDepth = 0
+
+      while (i < code.length) {
+        const char = code[i]
+        if (char === '"' || char === "'" || char === '`') {
+          const quote = char
+          i++
+          while (i < code.length && code[i] !== quote) {
+            if (code[i] === '\\') i++
+            i++
+          }
+          i++
+          continue
+        }
+
+        if (char === '=' && code[i + 1] === '>') {
+          i += 2
+          continue
+        }
+
+        if (char === '{') {
+          braceDepth++
+        } else if (char === '}') {
+          if (braceDepth > 0) braceDepth--
+        } else if (char === '(') {
+          parenDepth++
+        } else if (char === ')') {
+          if (parenDepth > 0) parenDepth--
+        } else if (char === '[') {
+          bracketDepth++
+        } else if (char === ']') {
+          if (bracketDepth > 0) bracketDepth--
+        } else if (braceDepth === 0 && parenDepth === 0 && bracketDepth === 0) {
+          if (char === '<') {
+            angleDepth++
+          } else if (char === '>') {
+            angleDepth--
+            if (angleDepth === 0) {
+              i++
+              break
+            }
+          }
+        }
+
+        i++
+      }
+
+      if (angleDepth === 0) {
+        let afterGenerics = i
+        while (afterGenerics < code.length && /\s/.test(code[afterGenerics])) {
+          afterGenerics++
+        }
+        if (code[afterGenerics] === '(') {
+          result += code.slice(lastIndex, matchStart) + 'defineConfig('
+          lastIndex = afterGenerics + 1
+          tokenRegex.lastIndex = lastIndex
+          continue
+        }
+      }
+    }
+  }
+
+  result += code.slice(lastIndex)
+  return result
+}
+
+export function parseTypeScriptConfig(file: string): Record<string, unknown> | null {
   if (!fs.existsSync(file)) return null
-  let source = fs.readFileSync(file, 'utf8')
-  source = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-  const match = source.match(/export\s+default\s+(?:defineConfig\s*\(\s*)?([\s\S]*?)(?:\s*\)\s*)?;?\s*$/)
-  if (!match) return null
-  try { return Function(`"use strict"; return (${match[1]})`)() as Record<string, unknown> } catch { return null }
+  const source = fs.readFileSync(file, 'utf8')
+  if (!/export\s+default\s+/.test(source)) {
+    throw new Error('No default export found in configuration file')
+  }
+
+  // Strip block comments and line comments while preserving strings/URLs
+  let cleaned = source.replace(
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\/\*[\s\S]*?\*\/|\/\/[^\r\n]*)/g,
+    (_match, str) => (str ? str : ' ')
+  )
+
+  // Strip imports while preserving string literals
+  cleaned = cleaned.replace(
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(\bimport\s+(?:type\s+)?[\s\S]*?from\s+['"][^'"]+['"];?|\bimport\s+['"][^'"]+['"];?)/g,
+    (_match, str) => (str ? str : '')
+  )
+
+  // Strip TypeScript variable type annotations (: Type =) while preserving string literals
+  cleaned = cleaned.replace(
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|(:\s*[A-Za-z_$][A-Za-z0-9_$.<>[\],|&\s]*?(?=\s*=))/g,
+    (_match, str) => (str ? str : '')
+  )
+
+  // Strip TypeScript assertions ('as const', 'as Type', 'satisfies Type') with balanced bracket tracking
+  cleaned = stripTypeAssertions(cleaned)
+
+  // Strip generic parameter from defineConfig<...>(...) with balanced bracket tracking
+  cleaned = stripDefineConfigGenerics(cleaned)
+
+  // Replace export default with return
+  cleaned = cleaned.replace(/export\s+default\s+/, 'return ')
+
+  const fn = Function('defineConfig', '"use strict"; ' + cleaned)
+  const result = fn((config: unknown) => config)
+  if (!result || typeof result !== 'object') {
+    throw new Error('Default export must evaluate to a configuration object')
+  }
+  return result as Record<string, unknown>
 }
 
 export function loadConfig(cwd = process.cwd()): MFEConfig {
   let rawConfig: Record<string, unknown> = {}
-  const tsConfig = parseTypeScriptConfig(path.join(cwd, 'mfeforge.config.ts'))
-  if (tsConfig) rawConfig = tsConfig
-  else {
+  const tsConfigPath = path.join(cwd, 'mfeforge.config.ts')
+  if (fs.existsSync(tsConfigPath)) {
+    try {
+      const tsConfig = parseTypeScriptConfig(tsConfigPath)
+      if (tsConfig) rawConfig = tsConfig
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.warn(
+        chalk.yellow(
+          `Warning: Failed to load ${tsConfigPath}: ${message}. Falling back to default configuration.`
+        )
+      )
+    }
+  } else {
     try {
       const result = explorer.search(cwd)
       if (result && !result.isEmpty && result.config) rawConfig = result.config

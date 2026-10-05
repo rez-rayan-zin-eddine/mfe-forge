@@ -10,8 +10,8 @@ export default defineConfig({
     tailwindcss(),
     federation({
       name: '{{camelName}}App',
+      // Remotes will be auto-populated by mfe-forge sync
       remotes: {
-        // Remotes will be auto-populated by mfe-forge sync
       },
       shared: {
         react: { singleton: true, requiredVersion: '^19.1.0' },
