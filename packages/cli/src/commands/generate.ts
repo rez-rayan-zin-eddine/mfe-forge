@@ -140,7 +140,7 @@ export const generateCommand = new Command('generate')
       }
 
       if (type === 'app') {
-        await postGenerateApp(context, vars, targetDir, options)
+        await postGenerateApp(context, vars, options)
       } else if (type === 'host') {
         await postGenerateHost(context, vars, targetDir)
       }
@@ -171,15 +171,14 @@ export const generateCommand = new Command('generate')
     }
   })
 
-async function postGenerateApp(context: any, vars: any, targetDir: string, options: any) {
-  const { scope, fullName, camelName, port, host } = vars
-
+async function postGenerateApp(context: any, vars: any, options: any) {
+  const { camelName, port, host } = vars
   if (!options.skipHost && host) {
     const hostDir = path.join(context.appsDir, host)
     if (!(await fs.pathExists(hostDir))) {
       console.log(chalk.yellow(`Host "${host}" not found. Run "mfe-forge generate host ${host}" to create it.`))
     } else {
-      await registerInHost(context, fullName, camelName, port, host)
+      await registerInHost(context, camelName, port, host)
     }
   }
 }
@@ -216,7 +215,6 @@ async function postGenerateHost(context: any, vars: any, targetDir: string) {
 
 async function registerInHost(
   context: any,
-  appName: string,
   appCamel: string,
   port: number,
   hostName: string

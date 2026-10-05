@@ -79,4 +79,17 @@ export interface RemoteApp {
   federationName: string
   packageName: string
   entry: string
+  exposes?: Record<string, string>
+  routes?: string[]
+  shared?: string[]
+}
+
+export interface ProjectManifest {
+  version: 1
+  generatedAt: string
+  project: { name: string; root: string }
+  apps: RemoteApp[]
+  hosts: string[]
+  packages: Array<{ name: string; path: string; dependencies: Record<string, string> }>
+  environments: Record<string, Record<string, { url: string }>>
 }

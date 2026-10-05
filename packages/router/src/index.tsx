@@ -38,7 +38,9 @@ export function useMFENavigation() {
   return {
     /** Navigate to a specific scope and path */
     navigateTo: (scope: string, path: string = '/') => {
-      const targetPath = `/${scope}${path}`
+      const normalizedScope = scope.replace(/^\/+|\/+$/g, '')
+      const normalizedPath = `/${path.replace(/^\/+/, '')}`
+      const targetPath = `/${normalizedScope}${normalizedPath === '/' ? '/' : normalizedPath}`
       navigate(targetPath)
     },
     /** Extract the current scope from the URL pathname */
@@ -89,7 +91,7 @@ export function generateRoutes(registry: RouteRegistry): React.JSX.Element[] {
       routes.push(
         <Route
           key={`${scope}-${route.path}`}
-          path={`/${scope}${route.path}`}
+          path={`/${scope.replace(/^\/+|\/+$/g, '')}/${route.path.replace(/^\/+/, '')}`}
           element={<Component />}
         />
       )
@@ -123,10 +125,13 @@ export function createRouteGuard(
     const [checking, setChecking] = useState(true)
 
     useEffect(() => {
+      let active = true
       Promise.resolve(predicate()).then((result) => {
+        if (!active) return
         setAllowed(result)
         setChecking(false)
-      })
+      }).catch(() => { if (active) { setAllowed(false); setChecking(false) } })
+      return () => { active = false }
     }, [])
 
     if (checking) return null

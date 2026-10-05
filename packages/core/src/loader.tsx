@@ -11,13 +11,25 @@ import type { RemoteComponentProps } from './types.js'
  * <RemoteLoader remoteName="checkoutApp" moduleName="App" />
  * ```
  */
+const remoteComponentCache = new Map<string, React.LazyExoticComponent<React.ComponentType<Record<string, unknown>>>>()
+
+function getRemoteComponent(remoteName: string, moduleName: string) {
+  const key = `${remoteName}/${moduleName}`
+  let component = remoteComponentCache.get(key)
+  if (!component) {
+    component = lazy(() => import(/* @vite-ignore */ key))
+    remoteComponentCache.set(key, component)
+  }
+  return component
+}
+
 export function RemoteLoader({
   remoteName,
   moduleName = 'App',
   fallback,
   props = {},
 }: RemoteComponentProps) {
-  const LazyComponent = lazy(() => import(/* @vite-ignore */ `${remoteName}/${moduleName}`))
+  const LazyComponent = getRemoteComponent(remoteName, moduleName)
 
   return (
     <MFErrorBoundary
@@ -55,12 +67,12 @@ export function RemoteLoader({
  * ```
  */
 export function LazyRemote(
-  factory: () => Promise<{ default: React.ComponentType<any> }>,
+  factory: () => Promise<{ default: React.ComponentType<Record<string, unknown>> }>,
   options?: { fallback?: ReactNode; remoteName?: string }
 ) {
   const Component = lazy(factory)
 
-  return function LazyRemoteWrapper(props: any) {
+  return function LazyRemoteWrapper(props: Record<string, unknown>) {
     return (
       <MFErrorBoundary remoteName={options?.remoteName}>
         <Suspense

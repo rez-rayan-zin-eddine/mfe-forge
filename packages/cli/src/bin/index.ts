@@ -10,6 +10,7 @@ import { testCommand } from '../commands/test.js'
 import { syncCommand } from '../commands/sync.js'
 import { doctorCommand } from '../commands/doctor.js'
 import { configCommand } from '../commands/config.js'
+import { statusCommand, graphCommand, inspectCommand, depsCommand, checkCommand, migrateCommand } from '../commands/diagnostics.js'
 
 const require = createRequire(import.meta.url)
 const pkg = require('../../package.json')
@@ -36,6 +37,12 @@ try {
   program.addCommand(syncCommand)
   program.addCommand(doctorCommand)
   program.addCommand(configCommand)
+  program.addCommand(statusCommand)
+  program.addCommand(graphCommand)
+  program.addCommand(inspectCommand)
+  program.addCommand(depsCommand)
+  program.addCommand(checkCommand)
+  program.addCommand(migrateCommand)
 
   program.parse()
 } catch (err: any) {

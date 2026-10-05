@@ -2,8 +2,6 @@ import { Command } from 'commander'
 import chalk from 'chalk'
 import ora from 'ora'
 import { execa } from 'execa'
-import fs from 'fs-extra'
-import path from 'path'
 import { getProjectContext } from '../utils/config.js'
 import { discoverApps, discoverHosts } from '../utils/discovery.js'
 

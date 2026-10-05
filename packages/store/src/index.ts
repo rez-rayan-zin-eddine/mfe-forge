@@ -61,14 +61,26 @@ export const useGlobalStore = create<GlobalState>()(
  * const items = useCartStore((state) => state.items)
  * ```
  */
-export function createScopedStore<T extends object>(scope: string, initialState: T) {
-  return create<T & { reset: () => void }>()(
-    subscribeWithSelector((set) => ({
-      ...initialState,
-      reset: () => set(initialState),
-    }))
-  )
+type Widen<T> = T extends Array<infer Item> ? ([Item] extends [never] ? unknown[] : Item[]) : T extends object ? { [K in keyof T]: Widen<T[K]> } : T
+type ScopedStore<T extends object> = Omit<ReturnType<typeof create<T & { reset: () => void }>>, 'setState' | 'getState'> & {
+  setState: (state: Partial<Widen<T>>) => void
+  getState: () => Widen<T> & { reset: () => void }
 }
+
+const scopedScopes = new Set<string>()
+
+export function createScopedStore<T extends object>(scope: string, initialState: T): ScopedStore<T> {
+  if (!scope.trim()) throw new Error('Store scope must not be empty')
+  scopedScopes.add(scope)
+  const store = create<T & { reset: () => void }>()(subscribeWithSelector((set) => ({ ...initialState, reset: () => set(initialState) })))
+  return store as unknown as ScopedStore<T>
+}
+
+export function clearScopedStore(scope?: string): void {
+  if (scope) scopedScopes.delete(scope)
+  else scopedScopes.clear()
+}
+
 
 /**
  * Synchronizes a Zustand store's state changes with an event bus.
@@ -81,14 +93,10 @@ export function createScopedStore<T extends object>(scope: string, initialState:
  * @returns Unsubscribe function
  */
 export function syncStoreAcrossMFEs<T>(
-  store: { subscribe: (selector: (state: T) => any, callback: (state: any) => void) => () => void },
-  eventBus: { emit: (event: string, payload: any) => void },
-  eventPrefix: string
+  store: { subscribe: (selector: (state: T) => T, callback: (state: T) => void) => () => void },
+  eventBus: { emit: (event: string, payload: { state: T; origin: string }) => void },
+  eventPrefix: string,
+  origin = `store-${Math.random().toString(36).slice(2)}`
 ) {
-  return store.subscribe(
-    (state: T) => state,
-    (state: any) => {
-      eventBus.emit(`${eventPrefix}:sync`, state)
-    }
-  )
+  return store.subscribe((state: T) => state, (state: T) => { eventBus.emit(`${eventPrefix}:sync`, { state, origin }) })
 }

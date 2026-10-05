@@ -73,27 +73,34 @@ const configSchema = z.object({
 
 // No custom .ts loader — let cosmiconfig use its default JS loader for .js files
 // .ts files require compilation so they're searched but may not load at runtime
-const explorer = cosmiconfigSync('mfeforge', {
-  searchPlaces: [
-    'mfeforge.config.js',
-    'mfeforge.config.ts',
-    '.mfeforgerc',
-    '.mfeforgerc.json',
-    'package.json',
-  ],
-})
+const explorer = cosmiconfigSync('mfeforge', { searchPlaces: ['mfeforge.config.js', '.mfeforgerc', '.mfeforgerc.json', 'package.json'] })
+
+function getConfigFilePath(cwd: string): string {
+  for (const file of ['mfeforge.config.ts', 'mfeforge.config.js', '.mfeforgerc.json']) {
+    const candidate = path.join(cwd, file)
+    if (fs.existsSync(candidate)) return candidate
+  }
+  return path.join(cwd, 'mfeforge.config.ts')
+}
+
+function parseTypeScriptConfig(file: string): Record<string, unknown> | null {
+  if (!fs.existsSync(file)) return null
+  let source = fs.readFileSync(file, 'utf8')
+  source = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+  const match = source.match(/export\s+default\s+(?:defineConfig\s*\(\s*)?([\s\S]*?)(?:\s*\)\s*)?;?\s*$/)
+  if (!match) return null
+  try { return Function(`"use strict"; return (${match[1]})`)() as Record<string, unknown> } catch { return null }
+}
 
 export function loadConfig(cwd = process.cwd()): MFEConfig {
-  let rawConfig: Record<string, any> = {}
-
-  try {
-    const result = explorer.search(cwd)
-    if (result && !result.isEmpty && result.config) {
-      rawConfig = result.config
-    }
-  } catch {
-    // Config file found but couldn't be parsed (e.g. ESM issues at runtime)
-    // Fall through and use defaults with directory name
+  let rawConfig: Record<string, unknown> = {}
+  const tsConfig = parseTypeScriptConfig(path.join(cwd, 'mfeforge.config.ts'))
+  if (tsConfig) rawConfig = tsConfig
+  else {
+    try {
+      const result = explorer.search(cwd)
+      if (result && !result.isEmpty && result.config) rawConfig = result.config
+    } catch { /* invalid config is reported by validation below */ }
   }
 
   // Always inject a name fallback so the schema never fails on a missing name
@@ -110,9 +117,31 @@ export function loadConfig(cwd = process.cwd()): MFEConfig {
 // at CLI runtime without a compiler. Users who want .ts can manually rename and
 // add ts-node or tsx as a dev dependency.
 export async function saveConfig(config: Partial<MFEConfig>, cwd = process.cwd()) {
-  const configPath = path.join(cwd, 'mfeforge.config.js')
+  const configPath = getConfigFilePath(cwd)
   const content = `/** @type {import('mfe-forge').MFEConfig} */\nexport default ${JSON.stringify(config, null, 2)};\n`
   await fs.writeFile(configPath, content)
+}
+
+export function getConfigValue(config: unknown, key: string): unknown {
+  return key.split('.').reduce((value: unknown, part) => (value && typeof value === 'object') ? (value as Record<string, unknown>)[part] : undefined, config)
+}
+
+export function setConfigValue(config: MFEConfig, key: string, value: unknown): MFEConfig {
+  const result = JSON.parse(JSON.stringify(config)) as MFEConfig
+  const parts = key.split('.')
+  let target: Record<string, unknown> = result as unknown as Record<string, unknown>
+  parts.slice(0, -1).forEach((part) => {
+    const current = target[part]
+    if (!current || typeof current !== 'object') target[part] = {}
+    target = target[part] as Record<string, unknown>
+  })
+  target[parts.at(-1)!] = value
+  return result
+}
+
+export function validateConfig(config: MFEConfig): string[] {
+  const result = configSchema.safeParse(config)
+  return result.success ? [] : result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
 }
 
 export function defineConfig(config: Partial<MFEConfig>): Partial<MFEConfig> {
