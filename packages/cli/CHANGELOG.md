@@ -10,7 +10,7 @@
 
 ### Major Changes
 
-- docs and lisence setting
+- docs and license setting
 
 ## 4.0.0
 

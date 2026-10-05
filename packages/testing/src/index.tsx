@@ -25,13 +25,38 @@ interface MFERenderOptions extends RenderOptions {
  * ```
  */
 export function renderMFE(ui: React.ReactElement, options: MFERenderOptions = {}): RenderResult {
-  const { route = '/', initialState, ...renderOptions } = options
+  const { route = '/', initialState, wrapper: CustomWrapper, ...renderOptions } = options
 
-  function Wrapper({ children }: { children: React.ReactNode }) {
-    return <React.StrictMode>{children}</React.StrictMode>
+  if (typeof window !== 'undefined' && window.history?.pushState) {
+    window.history.pushState({}, '', route)
   }
 
-  return rtlRender(ui, { wrapper: Wrapper, ...renderOptions })
+  if (initialState !== undefined && typeof window !== 'undefined') {
+    ;(window as unknown as { __MFE_INITIAL_STATE__?: unknown }).__MFE_INITIAL_STATE__ = initialState
+  } else if (typeof window !== 'undefined') {
+    delete (window as unknown as { __MFE_INITIAL_STATE__?: unknown }).__MFE_INITIAL_STATE__
+  }
+
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <React.StrictMode>
+        {CustomWrapper ? <CustomWrapper>{children}</CustomWrapper> : children}
+      </React.StrictMode>
+    )
+  }
+
+  const result = rtlRender(ui, { wrapper: Wrapper, ...renderOptions })
+  if (typeof result?.unmount === 'function') {
+    const originalUnmount = result.unmount.bind(result)
+    result.unmount = () => {
+      if (typeof window !== 'undefined') {
+        delete (window as unknown as { __MFE_INITIAL_STATE__?: unknown }).__MFE_INITIAL_STATE__
+      }
+      return originalUnmount()
+    }
+  }
+
+  return result
 }
 
 /**
@@ -42,7 +67,7 @@ export function renderMFE(ui: React.ReactElement, options: MFERenderOptions = {}
  * @param component - React component to use as the mock
  */
 export function mockRemoteModule(moduleName: string, component: React.ComponentType<any>) {
-  vi.mock(moduleName, () => ({
+  vi.doMock(moduleName, () => ({
     default: component,
   }))
 }

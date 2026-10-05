@@ -67,18 +67,19 @@ type ScopedStore<T extends object> = Omit<ReturnType<typeof create<T & { reset: 
   getState: () => Widen<T> & { reset: () => void }
 }
 
-const scopedScopes = new Set<string>()
-
 export function createScopedStore<T extends object>(scope: string, initialState: T): ScopedStore<T> {
   if (!scope.trim()) throw new Error('Store scope must not be empty')
-  scopedScopes.add(scope)
   const store = create<T & { reset: () => void }>()(subscribeWithSelector((set) => ({ ...initialState, reset: () => set(initialState) })))
   return store as unknown as ScopedStore<T>
 }
 
+/**
+ * Preserved for backwards compatibility. Scoped store lifecycle is managed
+ * by store consumers; instances are garbage collected when references are dropped,
+ * or can be reset via `store.getState().reset()`.
+ */
 export function clearScopedStore(scope?: string): void {
-  if (scope) scopedScopes.delete(scope)
-  else scopedScopes.clear()
+  void scope
 }
 
 
