@@ -96,3 +96,18 @@ describe('LazyRemote', () => {
     consoleError.mockRestore()
   })
 })
+
+describe('default error UI', () => {
+  afterEach(() => cleanup())
+
+  it('exposes the data-testid used by e2eHelpers.assertMFERendered', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const Remote = LazyRemote(() => Promise.reject(new Error('boom')), { remoteName: 'cartApp' })
+
+    render(<Remote />)
+
+    const errorUi = await screen.findByTestId('mfe-error')
+    expect(errorUi.getAttribute('data-remote-name')).toBe('cartApp')
+    consoleError.mockRestore()
+  })
+})

@@ -83,7 +83,12 @@ export class MFErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="mfe-error-boundary" style={styles.container}>
+        <div
+          className="mfe-error-boundary"
+          data-testid="mfe-error"
+          data-remote-name={remoteName}
+          style={styles.container}
+        >
           <div style={styles.card}>
             <h2 style={styles.title}>⚠️ Something went wrong</h2>
             {remoteName && <p style={styles.remote}>Remote: {remoteName}</p>}

@@ -1,41 +1,37 @@
 # @mfe-forge/design
 
-> Design system utilities and tokens for MFE Forge
+> Shared design tokens for MFE Forge micro-frontends, exposed as a typed object and as CSS custom properties.
 
-Part of the [MFE Forge](https://github.com/D-Rayno/mfe-forge) framework.
-
-## Features
-
-- **Design Tokens**: Centralized theme tokens (colors, spacing, typography)
-- **Token Manager**: Apply tokens to the DOM as CSS variables
-- **Tailwind Integration**: Pre-configured Tailwind theme based on tokens
+Part of the [MFE Forge](https://github.com/rez-rayan-zin-eddine/mfe-forge) project. Pre-1.0 (`0.x`): APIs may change between minor versions.
 
 ## Installation
 
 ```bash
 npm install @mfe-forge/design
-# or
-bun add @mfe-forge/design
 ```
 
-## Usage
+## Tokens
 
-### Applying Tokens
+```ts
+import { tokens, type TokenPath } from '@mfe-forge/design'
+
+tokens.colors.primary // 'oklch(0.82 0.2 128)'
+tokens.radius.md      // '0.5rem'
+tokens.spacing.lg     // '1.5rem'
+```
+
+Groups: `colors`, `radius`, `font`, `spacing`. `TokenPath` is the union of group names.
+
+## CSS custom properties
 
 ```ts
 import { applyTokens } from '@mfe-forge/design'
 
-// Apply tokens to document root
-applyTokens(document.documentElement)
+applyTokens() // defaults to document.documentElement
+applyTokens(document.querySelector('#cart-root') as HTMLElement)
 ```
 
-### Accessing Tokens
-
-```ts
-import { tokens } from '@mfe-forge/design'
-
-console.log(tokens.colors.primary)
-```
+Sets `--color-<name>`, `--radius-<name>`, `--font-sans` and `--font-mono` on the element, so styles (including Tailwind arbitrary values such as `bg-[var(--color-primary)]`) can consume them. Spacing tokens are available from the `tokens` object only.
 
 ## License
 
