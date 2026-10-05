@@ -2,16 +2,18 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'MFE Forge',
-  description: 'Production-ready Micro Frontend framework',
+  description: 'CLI and runtime packages for Vite + React micro-frontends with Module Federation',
   base: '/mfe-forge/',
   ignoreDeadLinks: true,
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/mfe-forge/logo.svg' }]],
 
   themeConfig: {
-    logo: '/logo.webp',
+    logo: '/logo.svg',
     nav: [
       { text: 'Guide', link: '/getting-started' },
       { text: 'CLI', link: '/cli' },
       { text: 'API', link: '/architecture' },
+      { text: 'Diagnostics', link: '/cli#inspection-and-health' },
     ],
 
     sidebar: {
@@ -44,6 +46,7 @@ export default defineConfig({
           items: [
             { text: 'Publishing', link: '/publishing' },
             { text: 'Migration', link: '/migration' },
+            { text: 'AI Operating Model', link: '/ai/agent-operating-model' },
           ],
         },
       ],

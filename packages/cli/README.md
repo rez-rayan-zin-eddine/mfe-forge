@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/D-Rayno/mfe-forge/main/logo.webp" alt="MFE Forge Logo" width="200" />
+  <img src="https://raw.githubusercontent.com/D-Rayno/mfe-forge/main/logo.svg" alt="MFE Forge Logo" width="200" />
 </p>
 
 # MFE Forge

@@ -6,7 +6,7 @@ hero:
   text: 'Micro Frontend Framework'
   tagline: Production-ready MFE architecture for Vite + React + Module Federation
   image:
-    src: /logo.webp
+    src: /logo.svg
     alt: MFE Forge Logo
   actions:
     - theme: brand
