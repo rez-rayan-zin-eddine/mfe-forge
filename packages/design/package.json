@@ -1,6 +1,6 @@
 {
   "name": "@mfe-forge/design",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Design system utilities for MFE Forge",
   "type": "module",
   "main": "./dist/index.js",
@@ -33,14 +33,14 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://d-rayno.github.io/mfe-forge/",
+  "homepage": "https://rez-rayan-zin-eddine.github.io/mfe-forge/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/D-Rayno/mfe-forge.git",
+    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
     "directory": "packages/design"
   },
   "bugs": {
-    "url": "https://github.com/D-Rayno/mfe-forge/issues"
+    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge/issues"
   },
   "license": "MIT"
 }

@@ -1,5 +1,14 @@
 # @mfe-forge/router
 
+## 0.1.0
+
+First release of the `0.x` development line under new ownership (repository: rez-rayan-zin-eddine/mfe-forge). Versions `2.0.0`–`8.1.0` were prototype releases and are deprecated; all six packages are versioned together.
+
+### Minor Changes
+
+- Normalize scope/path joining in `useMFENavigation` and `generateRoutes`.
+- `createRouteGuard` accepts async predicates, treats rejections as denial, and ignores results after unmount.
+
 ## 5.0.1
 
 ### Patch Changes

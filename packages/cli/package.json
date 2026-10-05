@@ -1,6 +1,6 @@
 {
   "name": "mfe-forge",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "CLI for scaffolding and managing Micro Frontend architectures",
   "type": "module",
   "bin": {
@@ -62,13 +62,13 @@
     "mfe"
   ],
   "license": "MIT",
-  "homepage": "https://d-rayno.github.io/mfe-forge/",
+  "homepage": "https://rez-rayan-zin-eddine.github.io/mfe-forge/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/D-Rayno/mfe-forge.git",
+    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/D-Rayno/mfe-forge/issues"
+    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge/issues"
   }
 }
