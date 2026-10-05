@@ -1,127 +1,59 @@
-# Publishing Guide
+# Publishing guide
 
-This guide covers publishing MFE Forge and your MFE applications.
+MFE Forge publishes six packages as one fixed version group: `mfe-forge` (CLI) and `@mfe-forge/core`, `router`, `store`, `design`, `testing`. The group is configured in `.changeset/config.json`.
 
-## Publishing MFE Forge Framework
+## Version line
 
-### Prerequisites
+The current release line is `0.x`, starting at `0.1.0`. Earlier npm versions (`2.0.0`–`8.1.0`) were published during the project's prototype phase, are deprecated on npm, and should not be used. `0.x` signals that the API may still change between minor versions.
 
-1. NPM account with 2FA enabled
-2. Organization scope configured (e.g., `@mfe-forge`)
-3. Changesets configured
+## Before publishing
 
-### Versioning
+1. Choose and approve the next semver version for the fixed package group.
+2. Add a Changeset describing user-visible changes.
+3. Ensure npm authentication and publish rights are available: `npm whoami` and `npm owner ls mfe-forge`.
+4. Run the full verification matrix:
 
 ```bash
-# Add a changeset
+bun install --frozen-lockfile
+bun run build
+bun run test
+bun run lint
+bun run docs:build
+```
+
+5. Run package dry runs and inspect tarballs:
+
+```bash
+for package in packages/*; do (cd "$package" && npm pack --dry-run); done
+```
+
+## Changesets workflow
+
+```bash
 bun changeset
-
-# Version packages
 bun version-packages
-
-# Publish to NPM
+bun run build
+bun run test
 bun release
 ```
 
-### Publishing Individual Packages
+`bun release` maps to `changeset publish`. It publishes only package versions that are not already on npm and requires an authenticated npm account/token.
+
+The `Release` GitHub workflow runs the same flow on every push to `main` using the `NPM_CONFIG_TOKEN` repository secret: it opens a "Version Packages" pull request while changesets are pending, and publishes once that pull request is merged. Keep that secret scoped to an account that owns all six packages.
+
+## Known release gaps
+
+- A complete init → generate → install → type-check → build → test → sync fixture matrix is not yet automated.
+- `dev` process supervision and `build --analyze` are not fully implemented (see the [CLI reference](./cli.md)).
+
+## Documentation deployment
+
+Build the VitePress site locally with `bun run docs:build`. The `Deploy Docs to GitHub Pages` workflow builds `docs/.vitepress/dist` and deploys it with `actions/deploy-pages` whenever `docs/**` changes on `main` (or on manual dispatch).
+
+### GitHub Pages source must be "GitHub Actions"
+
+`actions/deploy-pages` only takes effect when the repository's Pages source is **GitHub Actions** (Settings → Pages → Build and deployment → Source). If the source is "Deploy from a branch", the workflow succeeds but the site keeps serving that branch — this is what caused the documentation site to return 404 while it pointed at an empty legacy `gh-pages` branch. The source can also be set from the CLI:
 
 ```bash
-cd packages/cli
-npm publish --access public
-
-cd packages/core
-npm publish --access public
-```
-
-## Publishing Your MFE Applications
-
-### Docker Deployment
-
-Build Docker images for each MFE:
-
-```bash
-# Generate Dockerfiles
-mfe-forge generate docker --scope appname
-
-# Build images
-docker-compose build
-
-# Push to registry
-docker-compose push
-```
-
-### Static Hosting
-
-For static hosting (Vercel, Netlify, AWS S3):
-
-```bash
-# Build all apps
-mfe-forge build
-
-# Each app's dist folder can be deployed independently
-# apps/appname/auth/dist -> auth.yourdomain.com
-# apps/appname/dashboard/dist -> dashboard.yourdomain.com
-```
-
-### CDN Deployment
-
-For production Module Federation, host remotes on a CDN:
-
-```ts
-// vite.config.ts (host)
-federation({
-  remotes: {
-    authApp: 'https://cdn.yourdomain.com/auth/assets/remoteEntry.js',
-    dashboardApp: 'https://cdn.yourdomain.com/dashboard/assets/remoteEntry.js',
-  },
-})
-```
-
-## Environment Configuration
-
-Create `.env` files for each environment:
-
-```bash
-# .env.development
-VITE_AUTH_URL=http://localhost:3001
-VITE_API_URL=http://localhost:8080
-
-# .env.production
-VITE_AUTH_URL=https://auth.yourdomain.com
-VITE_API_URL=https://api.yourdomain.com
-```
-
-## CI/CD Pipeline
-
-MFE Forge generates GitHub Actions workflows for:
-
-1. **Lint & Type Check** — On every PR
-2. **Unit Tests** — On every PR
-3. **Build** — On merge to main
-4. **Deploy** — On release
-
-### Manual Deployment
-
-```bash
-# Build specific scope
-mfe-forge build --scope appname
-
-# Deploy to staging
-mfe-forge deploy --scope appname --env staging
-
-# Deploy to production
-mfe-forge deploy --scope appname --env production
-```
-
-## Registry Configuration
-
-For private registries, configure `mfeforge.config.ts`:
-
-```ts
-export default {
-  registry: {
-    url: 'https://npm.yourcompany.com',
-    auth: process.env.NPM_AUTH_TOKEN,
-  },
-}
+gh api -X PUT repos/<owner>/mfe-forge/pages -f build_type=workflow
 ```

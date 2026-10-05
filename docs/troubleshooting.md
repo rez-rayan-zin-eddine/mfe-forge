@@ -1,156 +1,42 @@
 # Troubleshooting
 
-## Common Issues
-
-### Port Already in Use
-
-```
-Error: Port 3001 is already in use
-```
-
-**Solution:**
+## Start with diagnostics
 
 ```bash
-# Find and kill process
-lsof -ti:3001 | xargs kill -9
-
-# Or use a different port
-mfe-forge generate app scope/name --port 3005
-```
-
-### Remote Module Not Found
-
-```
-Error: Cannot find module 'authApp/App'
-```
-
-**Solution:**
-
-```bash
-# Sync host configuration
-mfe-forge sync
-
-# Verify remote is running
-mfe-forge dev --app scope/auth
-```
-
-### TypeScript Declaration Errors
-
-```
-Cannot find module 'remoteApp/App' or its corresponding type declarations
-```
-
-**Solution:**
-
-```bash
-# Regenerate declarations
-mfe-forge sync --types
-
-# Check host's declarations.d.ts
-```
-
-### CORS Errors in Development
-
-```
-Access to script at 'http://localhost:3001/...' from origin 'http://localhost:3000' has been blocked
-```
-
-**Solution:**
-CORS is enabled by default in dev mode. If issues persist:
-
-```ts
-// vite.config.ts
-server: {
-  cors: {
-    origin: '*',
-    credentials: true
-  }
-}
-```
-
-### Shared Dependency Mismatch
-
-```
-Uncaught Error: Shared module react doesn't exist in shared scope default
-```
-
-**Solution:**
-Ensure all MFEs use the same version:
-
-```json
-// package.json (all MFEs)
-{
-  "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
-  }
-}
-```
-
-### Build Failures
-
-```
-Error: Could not resolve entry module "src/bootstrap.tsx"
-```
-
-**Solution:**
-
-```bash
-# Check file exists
-ls apps/scope/app/src/bootstrap.tsx
-
-# Regenerate if missing
-mfe-forge generate app scope/app --force
-```
-
-### Event Bus Not Working Across MFEs
-
-**Solution:**
-Ensure you're using the singleton:
-
-```ts
-// Correct
-import { globalEventBus } from '@mfe-forge/core'
-
-// Incorrect (creates new instance)
-import { EventBus } from '@mfe-forge/core'
-const bus = new EventBus()
-```
-
-### Hot Reload Not Working
-
-**Solution:**
-
-```bash
-# Use build --watch mode
-mfe-forge dev --build-watch
-
-# Or restart the specific app
-mfe-forge dev --app scope/app
-```
-
-### Remote name registered as `fooBarAppApp`
-
-This was a bug in MFE Forge < 8.1.0 where `discoverApps` appended the `App`
-suffix twice. After upgrading, run `mfe-forge sync --hosts` to regenerate
-correct federation keys in your host `vite.config.ts`.
-
-## Diagnostic Commands
-
-```bash
-# Check project health
+mfe-forge status --json
+mfe-forge check --json
+mfe-forge deps --check --json
 mfe-forge doctor
-
-# View configuration
-mfe-forge config --get defaults.packageManager
-
-# List all apps and ports
-mfe-forge sync --dry-run
 ```
 
-## Getting Help
+## Port conflicts
 
-1. Run `mfe-forge doctor` for automated diagnostics
-2. Check the [documentation](https://mfe-forge.dev)
-3. Search [GitHub Issues](https://github.com/D-Rayno/mfe-forge/issues)
-4. Join our [Discord community](https://discord.gg/mfe-forge)
+Discovery reads `port` values from app Vite configs and reports duplicates. Pick a port in the configured range or pass `--port` when generating a new app.
+
+## Remote module not found
+
+1. Confirm the remote is discovered: `mfe-forge inspect scope/remote --json`.
+2. Confirm the host relationship: `mfe-forge graph --format json`.
+3. Preview synchronization: `mfe-forge sync --dry-run --diff --json`.
+4. Apply and verify: `mfe-forge sync && mfe-forge sync --check`.
+5. Start the remote and host using their generated development scripts.
+
+## Declaration errors
+
+Run `mfe-forge sync --types`, then inspect the generated `src/remotes/declarations.d.ts`. The current declaration adapter covers the default `App` exposure; arbitrary expose/type contract generation is not yet implemented.
+
+## Configuration errors
+
+Use `mfe-forge config --validate --json`. Keep the config as a plain `export default { ... }` object; executable TypeScript config expressions are outside the current loader contract.
+
+## Shared dependency problems
+
+Use `mfe-forge deps --check --json`. Ensure React, React DOM, router, and other configured shared packages resolve to compatible versions across workspace packages.
+
+## Test failures
+
+Run the failing package directly. If the design test reports missing `jsdom`, reinstall from the lockfile. If a dynamic remote mock reports an undefined module name, ensure the package uses `vi.doMock` rather than a hoisted `vi.mock` call.
+
+## Known limitations
+
+The numeric `dev --parallel` value is not yet enforced by a dedicated supervisor. `build --analyze`, full route source mutation, environment-aware remote URLs, and full generated fixture integration are not complete.

@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { loadConfig, setConfigValue, stripDefineConfigGenerics, stripTypeAssertions } from './config.js'
+import { loadConfig, saveConfig, setConfigValue, stripDefineConfigGenerics, stripTypeAssertions } from './config.js'
 
 describe('loadConfig', () => {
   it('loads defaults and derives the project name from the working directory', async () => {
@@ -322,5 +322,31 @@ describe('stripDefineConfigGenerics', () => {
   it('leaves defineConfig without generics untouched', () => {
     const input = "export default defineConfig({ name: 'app' });"
     expect(stripDefineConfigGenerics(input)).toBe("export default defineConfig({ name: 'app' });")
+  })
+})
+
+describe('saveConfig', () => {
+  it('round-trips through a newly created mfeforge.config.ts', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mfe-forge-config-save-ts-'))
+    try {
+      await saveConfig({ name: 'saved', organization: 'acme' }, root)
+      expect(await fs.pathExists(path.join(root, 'mfeforge.config.ts'))).toBe(true)
+      expect(loadConfig(root).organization).toBe('acme')
+    } finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('keeps .mfeforgerc.json configs as valid JSON', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mfe-forge-config-save-json-'))
+    try {
+      const file = path.join(root, '.mfeforgerc.json')
+      await fs.writeJson(file, { name: 'json-project' })
+      await saveConfig({ name: 'json-project', organization: 'acme' }, root)
+      expect(await fs.readJson(file)).toEqual({ name: 'json-project', organization: 'acme' })
+      expect(loadConfig(root).organization).toBe('acme')
+    } finally {
+      await fs.remove(root)
+    }
   })
 })

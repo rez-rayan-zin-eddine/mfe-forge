@@ -4,7 +4,7 @@ layout: home
 hero:
   name: 'MFE Forge'
   text: 'Micro Frontend Framework'
-  tagline: Production-ready MFE architecture for Vite + React + Module Federation
+  tagline: Scaffolding and runtime utilities for Vite + React + Module Federation micro-frontends
   image:
     src: /logo.svg
     alt: MFE Forge Logo

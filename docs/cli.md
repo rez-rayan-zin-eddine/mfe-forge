@@ -1,150 +1,71 @@
-# CLI Reference
+# CLI reference
 
-## `mfe-forge init [name]`
+The CLI reads the project in the current working directory. Run `mfe-forge <command> --help` for the installed version’s exact options. JSON modes print machine-readable output without human status text.
 
-Initialize a new MFE Forge project.
+## Project creation
 
-### Options
+### `init [name]`
 
-| Option                        | Description                  | Default   |
-| ----------------------------- | ---------------------------- | --------- |
-| `-t, --template <template>`   | Project template             | `default` |
-| `-pm, --package-manager <pm>` | Package manager              | `bun`     |
-| `--skip-install`              | Skip dependency installation | `false`   |
-| `--skip-git`                  | Skip git initialization      | `false`   |
+Creates `apps/`, `packages/`, `tools/`, a package-manager-specific workspace skeleton, and a generated `mfeforge.config.js`.
 
-### Examples
+Options: `--template <template>`, `--package-manager <bun|pnpm|npm>`, `--skip-install`, `--skip-git`.
 
-```bash
-# Interactive mode
-mfe-forge init
+### `generate <type> [name]`
 
-# With options
-mfe-forge init my-project --package-manager pnpm
-```
+Types: `app`, `host`, `package`/`pkg`, `library`, `design-system`. Apps and hosts require `scope/name`.
 
-## `mfe-forge generate <type> [name]`
+Options: `--port`, `--host`, `--scope`, `--features`, `--skip-host`, `--dry-run`.
 
-Generate applications, hosts, or packages.
+Generated apps receive a port, Vite/Module Federation template, and root development script. Existing hosts can be updated during generation; `sync` is the deterministic reconciliation command.
 
-### Types
+## Development and build
 
-| Type            | Description                  |
-| --------------- | ---------------------------- |
-| `app`           | Micro Frontend application   |
-| `host`          | Host/shell application       |
-| `package`       | Shared package               |
-| `library`       | Component library            |
-| `design-system` | Design system with Storybook |
+### `dev`
 
-### Options
+Options: `--scope`, `--app`, `--parallel <n>`, `--host-only`, `--build-watch`. The current implementation starts generated root scripts through `concurrently` for multi-app runs and falls back to sequential starts if that process fails. The numeric limit is not yet a full process-supervisor guarantee.
 
-| Option                  | Description                                     |
-| ----------------------- | ----------------------------------------------- |
-| `--port <port>`         | Development server port                         |
-| `--host <host>`         | Target host for registration                    |
-| `--scope <scope>`       | Scope/team for the app                          |
-| `--features <features>` | Comma-separated features                        |
-| `--skip-host`           | Skip host auto-generation                       |
-| `--dry-run`             | Preview generated files without writing to disk |
+### `build [app]`
 
-### Examples
+Builds discovered apps, optionally narrowed with `--scope`. The current command accepts `--parallel` for compatibility but does not yet provide a bounded worker pool or bundle analysis; do not rely on `--analyze` until that feature is implemented.
 
-> **Note:** Apps and hosts **must** use `scope/name` format (e.g., `platform/auth`).
-> Inside a monorepo containing MFE Forge packages, runtime dependencies are linked as `workspace:*`.
+### `test [app]`
 
-```bash
-# Scoped app (required format)
-mfe-forge generate app platform/auth
+Runs the workspace or selected app’s existing test script. The repository packages use Vitest. The flags `--unit`, `--e2e`, `--coverage`, and `--watch` are retained by the current command surface but are not yet translated into framework-specific test plans; use package scripts directly for those modes.
 
-# With explicit port
-mfe-forge generate app platform/auth --port 3005
+## Synchronization
 
-# Override host
-mfe-forge generate app marketing/landing --host platform/host
+### `sync`
 
-# Package (no scope required)
-mfe-forge generate package ui
+Synchronizes host federation remotes and generated declarations, and writes `mfe-forge.manifest.json`.
 
-# Preview without writing
-mfe-forge generate app platform/dashboard --dry-run
-```
+- `--types` — update remote declarations
+- `--hosts` — update host Vite remotes
+- `--routes` — record route metadata intent; route source mutation is not yet implemented
+- `--dry-run` — calculate changes without writing
+- `--diff` — show only changed files
+- `--check` — fail if changes are needed
+- `--json` — emit structured results
 
-## `mfe-forge dev`
+Run `sync --dry-run --diff --json` before committing generated changes. A second `sync --check` should be clean.
 
-Start development servers.
+## Inspection and health
 
-### Options
+- `status [--json]` — regenerate and summarize manifest topology.
+- `graph --format json` — show host-to-remote relationships.
+- `inspect <app> [--json]` — inspect one discovered app.
+- `deps [--check] [--shared] [--json]` — inspect configured shared dependencies and version mismatches.
+- `check [--json]` — validate manifest ports and duplicate app names.
+- `doctor` — run Node, lockfile, port, host, and workspace checks.
+- `migrate [--check] [--json]` — inspect/apply the manifest-v1 migration.
 
-| Option                | Description                 |
-| --------------------- | --------------------------- |
-| `-s, --scope <scope>` | Run only apps in scope      |
-| `-a, --app <app>`     | Run specific app            |
-| `-p, --parallel <n>`  | Max parallel processes      |
-| `--host-only`         | Run only hosts              |
-| `--build-watch`       | Use build --watch + preview |
+## Configuration
 
-### Examples
+- `config --show [--json]` — print normalized configuration.
+- `config --get <key> [--json]` — read a dotted value.
+- `config --set <key> --value <value> [--json]` — parse JSON values when possible and write the config file.
+- `config --validate [--json]` — validate the normalized schema.
+- `config --edit` — open the discovered config file.
 
-```bash
-# Run all
-mfe-forge dev
+## Exit behavior
 
-# Run scope
-mfe-forge dev --scope appname
-
-# Run single app
-mfe-forge dev --app appname/auth
-```
-
-## `mfe-forge build [app]`
-
-Build for production.
-
-### Options
-
-| Option                | Description             |
-| --------------------- | ----------------------- |
-| `-s, --scope <scope>` | Build all apps in scope |
-| `--analyze`           | Analyze bundle size     |
-| `--parallel`          | Build in parallel       |
-
-## `mfe-forge sync`
-
-Synchronize configurations across MFEs.
-
-### Options
-
-| Option     | Description                  |
-| ---------- | ---------------------------- |
-| `--types`  | Sync TypeScript declarations |
-| `--hosts`  | Sync host configurations     |
-| `--routes` | Sync route registrations     |
-
-Without options, runs all sync operations.
-
-## `mfe-forge test`
-
-Run tests.
-
-### Options
-
-| Option           | Description     |
-| ---------------- | --------------- |
-| `-u, --unit`     | Unit tests only |
-| `-e, --e2e`      | E2E tests only  |
-| `-c, --coverage` | Coverage report |
-| `-w, --watch`    | Watch mode      |
-
-## `mfe-forge doctor`
-
-Diagnose common issues:
-
-- Node version compatibility
-- Port conflicts
-- Missing hosts
-- Workspace configuration
-
-## `mfe-forge config`
-
-Manage configuration interactively or view settings.
+Commands that detect invalid state or failed work set a non-zero exit status. Always use `--json` for automation rather than parsing colored human output.

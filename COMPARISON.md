@@ -27,7 +27,7 @@
 - You need **scope-based organization** (teams/products)
 - You want **auto-discovery** of remotes
 - You need **cross-MFE communication** patterns
-- You want **production-ready** templates out of the box
+- You want opinionated, ready-to-run templates out of the box (pre-1.0; see FRAMEWORK.md for maturity)
 
 ### Use Nx when:
 

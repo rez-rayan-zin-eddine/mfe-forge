@@ -1,79 +1,42 @@
 # Contributing to MFE Forge
 
-Thank you for your interest in contributing to MFE Forge! This document provides guidelines for contributing to the project.
-
-## Development Setup
+## Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/D-Rayno/mfe-forge.git
+git clone https://github.com/rez-rayan-zin-eddine/mfe-forge.git
 cd mfe-forge
-
-# Install dependencies
-bun install
-
-# Build all packages
+bun install --frozen-lockfile
 bun run build
-
-# Run tests
 bun run test
+bun run docs:build
 ```
 
-## Project Structure
+Node 20+ and Bun 1.1+ are supported; pnpm/npm remain supported for generated projects where their scripts are compatible.
 
-```
-mfe-forge/
-├── packages/
-│   ├── cli/          # Core CLI tool
-│   ├── core/         # Runtime utilities
-│   ├── router/       # Routing coordination
-│   ├── store/        # State management
-│   ├── design/       # Design tokens
-│   └── testing/      # Testing utilities
-├── templates/        # Project templates
-└── docs/             # Documentation
-```
+## Workflow
 
-## Making Changes
+1. Read [`AGENTS.md`](AGENTS.md) and the relevant `.agents/skills/` procedure.
+2. Create a focused branch.
+3. Inspect existing APIs/tests before editing.
+4. Add tests for changed behavior.
+5. Keep docs and CLI help truthful.
+6. Run focused checks, then the full build/test/docs matrix.
+7. Review `git diff --check` and report known limitations.
 
-1. Create a new branch: `git checkout -b feat/your-feature`
-2. Make your changes
-3. Add tests if applicable
-4. Run `bun run lint` and `bun run type-check`
-5. Commit with conventional commits: `feat: add new command`
-6. Push and create a PR
+## Repository structure
 
-## Commit Convention
+- `packages/cli` — CLI, config, discovery, manifest, sync, and templates
+- `packages/core` — runtime loader, registry, event bus, error boundary
+- `packages/router` — route helpers and navigation
+- `packages/store` — global/scoped Zustand state and sync
+- `packages/design` — tokens and CSS variables
+- `packages/testing` — React and remote testing helpers
+- `docs` — VitePress site and persistent AI engineering knowledge
 
-We use [Conventional Commits](https://www.conventionalcommits.org/):
+## Commit and PRs
 
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `refactor:` Code refactoring
-- `test:` Test changes
-- `chore:` Build/tooling changes
+Use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`). PRs should state behavior, verification commands, and remaining limitations.
 
-## Adding Templates
+## Release
 
-To add a new template:
-
-1. Create a directory in `packages/cli/src/templates/`
-2. Add template files with Mustache variables
-3. Update the `copyTemplate` utility if needed
-4. Add documentation
-
-## Releasing
-
-We use [Changesets](https://github.com/changesets/changesets) for versioning:
-
-```bash
-# Add a changeset
-bun changeset
-
-# Version packages
-bun version-packages
-
-# Publish
-bun release
-```
+The packages follow the `0.x` development line (current: `0.1.0`); all six packages are versioned together. Use Changesets for versioning; do not run `npm publish` without passing authentication, dry-run, and full verification gates. See [docs/publishing.md](docs/publishing.md).

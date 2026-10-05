@@ -1,129 +1,35 @@
 # Configuration
 
-MFE Forge is configured via `mfeforge.config.ts` in your project root.
-
-## Configuration File
+MFE Forge reads `mfeforge.config.ts` when present, otherwise `mfeforge.config.js` (or any other format `cosmiconfig` discovers). The TypeScript loader is intentionally lightweight — it does not run a compiler. It supports an `export default { ... }` object (optionally wrapped in `defineConfig(...)` or `defineConfig<T>(...)`), comments, `import` statements, variable type annotations, and `as` / `as const` / `satisfies` assertions. Imported values are not resolved, so the exported object must be self-contained. If the file cannot be evaluated, the CLI prints a warning naming the file and falls back to defaults instead of silently ignoring it.
 
 ```ts
 export default {
   name: 'my-platform',
   organization: 'acme',
-
-  defaults: {
-    framework: 'react',
-    language: 'typescript',
-    styling: 'tailwind',
-    stateManagement: 'zustand',
-    packageManager: 'bun',
-  },
-
-  federation: {
-    plugin: '@originjs/vite-plugin-federation',
-    shared: ['react', 'react-dom', 'react-router-dom', 'zustand'],
-  },
-
-  dev: {
-    autoStartHost: true,
-    parallelLimit: 10,
-    portRange: [3000, 3999],
-    cors: true,
-  },
-
-  build: {
-    target: 'esnext',
-    minify: false,
-    cssCodeSplit: false,
-    sourcemap: true,
-  },
-
-  testing: {
-    unit: 'vitest',
-    e2e: 'playwright',
-    coverage: true,
-  },
-
-  designSystem: {
-    enabled: true,
-    tokens: true,
-    storybook: true,
-  },
-
-  ci: {
-    provider: 'github',
-    docker: true,
-    deployTarget: 'vercel',
-  },
+  defaults: { framework: 'react', language: 'typescript', styling: 'tailwind', stateManagement: 'zustand', packageManager: 'bun' },
+  federation: { plugin: '@originjs/vite-plugin-federation', shared: ['react', 'react-dom', 'react-router-dom', 'zustand'] },
+  dev: { autoStartHost: true, parallelLimit: 10, portRange: [3000, 3999], cors: true },
+  build: { target: 'esnext', minify: false, cssCodeSplit: false, sourcemap: true },
+  testing: { unit: 'vitest', e2e: 'playwright', coverage: true },
+  designSystem: { enabled: true, tokens: true, storybook: true },
+  ci: { provider: 'github', docker: true, deployTarget: 'none' },
 }
 ```
 
-## Configuration Options
+All sections are normalized with defaults and validated through the CLI schema. `registry` and `scopes` are optional.
 
-### `name`
+## Editing from the CLI
 
-- **Type**: `string`
-- **Description**: Project name
+```bash
+mfe-forge config --show --json
+mfe-forge config --get dev.parallelLimit
+mfe-forge config --set dev.parallelLimit --value 4
+mfe-forge config --set federation.shared --value '["react","react-dom","zustand"]'
+mfe-forge config --validate --json
+```
 
-### `organization`
+`--set` writes the normalized configuration back to the discovered config file (or creates `mfeforge.config.ts` when none exists) as a plain object literal. Values are parsed as JSON first, so quoted strings, booleans, numbers, arrays, and objects can be set safely.
 
-- **Type**: `string` (optional)
-- **Description**: NPM organization scope (e.g., `@acme`)
+## Manifest relationship
 
-### `defaults`
-
-- **Type**: `object`
-- **Properties**:
-  - `framework`: `'react' | 'vue' | 'svelte'`
-  - `language`: `'typescript' | 'javascript'`
-  - `styling`: `'tailwind' | 'css-modules' | 'styled-components' | 'none'`
-  - `stateManagement`: `'zustand' | 'redux' | 'jotai' | 'none'`
-  - `packageManager`: `'bun' | 'pnpm' | 'npm'`
-
-### `federation`
-
-- **Type**: `object`
-- **Properties**:
-  - `plugin`: Module federation plugin to use
-  - `shared`: Array of shared dependency names
-  - `runtimePlugin`: Custom runtime plugin path
-
-### `dev`
-
-- **Type**: `object`
-- **Properties**:
-  - `autoStartHost`: Automatically start host with apps
-  - `parallelLimit`: Maximum parallel dev servers
-  - `portRange`: [min, max] port range
-  - `cors`: Enable CORS in dev server
-
-### `build`
-
-- **Type**: `object`
-- **Properties**:
-  - `target`: Build target
-  - `minify`: Enable minification
-  - `cssCodeSplit`: Split CSS into chunks
-  - `sourcemap`: Generate source maps
-
-### `testing`
-
-- **Type**: `object`
-- **Properties**:
-  - `unit`: Unit testing framework
-  - `e2e`: E2E testing framework
-  - `coverage`: Generate coverage reports
-
-### `designSystem`
-
-- **Type**: `object`
-- **Properties**:
-  - `enabled`: Enable design system
-  - `tokens`: Generate design tokens
-  - `storybook`: Include Storybook
-
-### `ci`
-
-- **Type**: `object`
-- **Properties**:
-  - `provider`: CI provider
-  - `docker`: Include Docker support
-  - `deployTarget`: Deployment target
+Configuration expresses policy. `mfe-forge status` and `mfe-forge sync` generate `mfe-forge.manifest.json`, which records apps, hosts, packages, ports, federation names, and generated metadata for tools and agents. Do not hand-edit generated manifest data; rerun the command instead.

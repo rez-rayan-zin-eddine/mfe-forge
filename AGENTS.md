@@ -67,7 +67,7 @@ Before handoff, inspect `git diff --check`, the final diff, changed public APIs,
 
 ## Repository invariants
 
-- Package versions stay `0.0.0` until architecture stabilization.
+- Packages are on the pre-1.0 `0.x` line and are versioned together; bump versions only through Changesets for an approved release.
 - Node 20+, Bun, pnpm, and npm compatibility must be preserved where already supported.
 - CLI failures use non-zero exit status; machine-readable modes must not mix prose into JSON.
 - Runtime code must remain safe when browser globals are unavailable.

@@ -52,7 +52,7 @@ export default defineConfig({
       ],
     },
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/D-Rayno/mfe-forge' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/rez-rayan-zin-eddine/mfe-forge' }],
 
     footer: {
       message: 'Released under the MIT License.',

@@ -412,12 +412,13 @@ export function loadConfig(cwd = process.cwd()): MFEConfig {
   return parsed as MFEConfig
 }
 
-// Config is saved as .js (not .ts) because cosmiconfig cannot parse TypeScript
-// at CLI runtime without a compiler. Users who want .ts can manually rename and
-// add ts-node or tsx as a dev dependency.
+// Config is written as a plain object literal so both the lightweight TS loader
+// and cosmiconfig can read it back; .json configs are written as pure JSON.
 export async function saveConfig(config: Partial<MFEConfig>, cwd = process.cwd()) {
   const configPath = getConfigFilePath(cwd)
-  const content = `/** @type {import('mfe-forge').MFEConfig} */\nexport default ${JSON.stringify(config, null, 2)};\n`
+  const content = configPath.endsWith('.json')
+    ? `${JSON.stringify(config, null, 2)}\n`
+    : `/** @type {import('mfe-forge').MFEConfig} */\nexport default ${JSON.stringify(config, null, 2)};\n`
   await fs.writeFile(configPath, content)
 }
 
