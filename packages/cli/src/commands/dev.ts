@@ -3,7 +3,8 @@ import chalk from 'chalk'
 import ora from 'ora'
 import { execa } from 'execa'
 import { getProjectContext } from '../utils/config.js'
-import { discoverApps, discoverHosts } from '../utils/discovery.js'
+import { discoverApps, discoverHosts, resolveApp } from '../utils/discovery.js'
+import { CliError, ExitCode } from '../utils/exit.js'
 
 export const devCommand = new Command('dev')
   .description('Start development servers')
@@ -24,13 +25,8 @@ export const devCommand = new Command('dev')
       let targets: string[] = []
 
       if (options.app) {
-        const app = allApps.find(
-          (a) => a.name === options.app || a.name.endsWith(`/${options.app}`)
-        )
-        if (!app) {
-          console.error(chalk.red(`App "${options.app}" not found`))
-          process.exit(1)
-        }
+        const app = resolveApp(allApps, options.app)
+        if (!app) throw new CliError(`App "${options.app}" not found`, ExitCode.UserError)
         targets = [app.name]
       } else if (options.scope) {
         targets = allApps.filter((a) => a.scope === options.scope).map((a) => a.name)
@@ -47,7 +43,7 @@ export const devCommand = new Command('dev')
 
       if (targets.length === 0) {
         console.log(chalk.yellow('No apps found to run'))
-        process.exit(0)
+        return
       }
 
       console.log(chalk.cyan(`\n🚀 Starting ${targets.length} application(s)...\n`))
@@ -90,8 +86,8 @@ export const devCommand = new Command('dev')
         }
       }
     } catch (error: any) {
+      if (error instanceof CliError) throw error
       spinner.fail('Dev server failed')
-      console.error(chalk.red(error.message))
-      process.exit(1)
+      throw new CliError(error.message, ExitCode.TaskFailed)
     }
   })

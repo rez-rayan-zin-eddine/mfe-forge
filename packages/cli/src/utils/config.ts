@@ -4,6 +4,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
 import type { MFEConfig } from '../types/index.js'
+import { CliError, ExitCode } from './exit.js'
 
 const configSchema = z.object({
   name: z.string().min(1),
@@ -435,8 +436,12 @@ export function loadConfig(cwd = process.cwd()): MFEConfig {
     ...rawConfig,
   }
 
-  const parsed = configSchema.parse(configData)
-  return parsed as MFEConfig
+  const parsed = configSchema.safeParse(configData)
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`)
+    throw new CliError(`Invalid MFE Forge configuration:\n${issues.join('\n')}`, ExitCode.ConfigError)
+  }
+  return parsed.data as MFEConfig
 }
 
 // Config is written as a plain object literal so both the lightweight TS loader
