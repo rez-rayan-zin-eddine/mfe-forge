@@ -1,9 +1,21 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "changelog": [
+    "@changesets/changelog-github",
+    {
+      "repo": "rez-rayan-zin-eddine/mfe-forge"
+    }
+  ],
   "commit": false,
   "fixed": [
-    ["mfe-forge", "@mfe-forge/core", "@mfe-forge/router", "@mfe-forge/store", "@mfe-forge/design", "@mfe-forge/testing"]
+    [
+      "mfe-forge",
+      "@mfe-forge/core",
+      "@mfe-forge/router",
+      "@mfe-forge/store",
+      "@mfe-forge/design",
+      "@mfe-forge/testing"
+    ]
   ],
   "linked": [],
   "access": "public",
