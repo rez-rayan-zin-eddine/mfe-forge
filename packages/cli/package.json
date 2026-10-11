@@ -1,6 +1,6 @@
 {
   "name": "mfe-forge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI for scaffolding and managing Micro Frontend architectures",
   "type": "module",
   "bin": {
