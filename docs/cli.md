@@ -26,11 +26,11 @@ Options: `--scope`, `--app`, `--parallel <n>`, `--host-only`, `--build-watch`. T
 
 ### `build [app]`
 
-Builds discovered apps, optionally narrowed with `--scope`. The current command accepts `--parallel` for compatibility but does not yet provide a bounded worker pool or bundle analysis; do not rely on `--analyze` until that feature is implemented.
+Builds discovered apps, optionally narrowed with `--scope`. Every target is attempted and a summary is printed; the command exits with code `2` if any build failed. Pass `--bail` to stop at the first failure. An explicit `[app]` that does not match a discovered app exits with code `1`. The command accepts `--parallel` for compatibility but does not yet provide a bounded worker pool or bundle analysis; do not rely on `--analyze` until that feature is implemented.
 
 ### `test [app]`
 
-Runs the workspace or selected app’s existing test script. The repository packages use Vitest. The flags `--unit`, `--e2e`, `--coverage`, and `--watch` are retained by the current command surface but are not yet translated into framework-specific test plans; use package scripts directly for those modes.
+Runs the workspace or selected app’s existing test script (`[app]` accepts `scope/name` or an unambiguous bare name) and exits with code `2` when tests fail. The repository packages use Vitest. `--unit` and `--e2e` run the `test:unit` / `test:e2e` script instead of `test`; `--coverage` and `--watch` are forwarded to the script after `--`.
 
 ## Synchronization
 
@@ -69,3 +69,10 @@ Run `sync --dry-run --diff --json` before committing generated changes. A second
 ## Exit behavior
 
 Commands that detect invalid state or failed work set a non-zero exit status. Always use `--json` for automation rather than parsing colored human output.
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success (also for `--help` and `--version`) |
+| `1` | User error: unknown app or command, invalid option, missing argument |
+| `2` | A delegated task failed: build, test, or dev server |
+| `3` | The project configuration could not be loaded or is invalid |

@@ -5,6 +5,19 @@ import { describe, expect, it, vi } from 'vitest'
 import { loadConfig, saveConfig, setConfigValue, stripDefineConfigGenerics, stripTypeAssertions } from './config.js'
 
 describe('loadConfig', () => {
+  it('throws a ConfigError (exit code 3) for a schema-invalid configuration', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mfe-forge-config-test-'))
+
+    try {
+      await fs.writeFile(path.join(root, 'mfeforge.config.js'), "export default { defaults: { packageManager: 'yarn' } }\n")
+      const err = (() => { try { loadConfig(root) } catch (e) { return e } })() as { exitCode?: number; message: string }
+      expect(err.exitCode).toBe(3)
+      expect(err.message).toContain('defaults.packageManager')
+    } finally {
+      await fs.remove(root)
+    }
+  })
+
   it('loads defaults and derives the project name from the working directory', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mfe-forge-config-test-'))
 

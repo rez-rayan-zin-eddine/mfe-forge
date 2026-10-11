@@ -10,6 +10,7 @@ import { testCommand } from '../commands/test.js'
 import { syncCommand } from '../commands/sync.js'
 import { doctorCommand } from '../commands/doctor.js'
 import { configCommand } from '../commands/config.js'
+import { CliError, ExitCode } from '../utils/exit.js'
 import { statusCommand, graphCommand, inspectCommand, depsCommand, checkCommand, migrateCommand } from '../commands/diagnostics.js'
 
 const require = createRequire(import.meta.url)
@@ -27,32 +28,38 @@ program
 // Global error handling
 program.exitOverride()
 
-try {
-  // Register commands
-  program.addCommand(initCommand)
-  program.addCommand(generateCommand)
-  program.addCommand(devCommand)
-  program.addCommand(buildCommand)
-  program.addCommand(testCommand)
-  program.addCommand(syncCommand)
-  program.addCommand(doctorCommand)
-  program.addCommand(configCommand)
-  program.addCommand(statusCommand)
-  program.addCommand(graphCommand)
-  program.addCommand(inspectCommand)
-  program.addCommand(depsCommand)
-  program.addCommand(checkCommand)
-  program.addCommand(migrateCommand)
+program.addCommand(initCommand)
+program.addCommand(generateCommand)
+program.addCommand(devCommand)
+program.addCommand(buildCommand)
+program.addCommand(testCommand)
+program.addCommand(syncCommand)
+program.addCommand(doctorCommand)
+program.addCommand(configCommand)
+program.addCommand(statusCommand)
+program.addCommand(graphCommand)
+program.addCommand(inspectCommand)
+program.addCommand(depsCommand)
+program.addCommand(checkCommand)
+program.addCommand(migrateCommand)
 
-  program.parse()
+// Subcommands inherit exitOverride only when it is set on them directly
+for (const command of program.commands) command.exitOverride()
+
+try {
+  await program.parseAsync()
 } catch (err: any) {
-  if (err.code === 'commander.version') {
-    console.log(chalk.cyan(`mfe-forge v${pkg.version}`))
-    process.exit(0)
+  if (err.code === 'commander.version' || err.code === 'commander.help' || err.code === 'commander.helpDisplayed') {
+    process.exit(ExitCode.Ok)
   }
-  if (err.code === 'commander.help') {
-    process.exit(0)
+  if (err instanceof CliError) {
+    console.error(chalk.red('\n❌ Error:'), err.message)
+    process.exit(err.exitCode)
+  }
+  if (typeof err.code === 'string' && err.code.startsWith('commander.')) {
+    // Commander already printed the usage error
+    process.exit(ExitCode.UserError)
   }
   console.error(chalk.red('\n❌ Error:'), err.message || err)
-  process.exit(1)
+  process.exit(ExitCode.UserError)
 }
