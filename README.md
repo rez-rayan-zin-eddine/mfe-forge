@@ -65,13 +65,14 @@ Use `mfe-forge <command> --help` for the built command contract.
 
 ```bash
 bun install --frozen-lockfile
+bun run lint
+bun run type-check
 bun run build
 bun run test
-bun run lint
 bun run docs:build
 ```
 
-Read [AGENTS.md](AGENTS.md) for the repository contract and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow.
+Read [AGENTS.md](AGENTS.md) for the repository contract and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow. Questions go to [SUPPORT.md](SUPPORT.md); security reports to [SECURITY.md](SECURITY.md).
 
 ## Documentation
 

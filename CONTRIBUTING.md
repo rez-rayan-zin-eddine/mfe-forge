@@ -1,5 +1,7 @@
 # Contributing to MFE Forge
 
+By participating you agree to follow the [code of conduct](CODE_OF_CONDUCT.md). Report security issues privately as described in [SECURITY.md](SECURITY.md); for questions see [SUPPORT.md](SUPPORT.md).
+
 ## Setup
 
 ```bash
@@ -11,7 +13,7 @@ bun run test
 bun run docs:build
 ```
 
-Node 20+ and Bun 1.1+ are supported; pnpm/npm remain supported for generated projects where their scripts are compatible.
+Repository development needs Node 20+ and the Bun version pinned in the root `package.json` (`packageManager`). Generated projects support Bun, pnpm and npm.
 
 ## Workflow
 
@@ -20,8 +22,9 @@ Node 20+ and Bun 1.1+ are supported; pnpm/npm remain supported for generated pro
 3. Inspect existing APIs/tests before editing.
 4. Add tests for changed behavior.
 5. Keep docs and CLI help truthful.
-6. Run focused checks, then the full build/test/docs matrix.
-7. Review `git diff --check` and report known limitations.
+6. Add a changeset (`bun changeset`) when a published package or template changes.
+7. Run focused checks, then the full matrix: `bun run lint && bun run type-check && bun run build && bun run test && bun run check:package && bun run docs:build`.
+8. Review `git diff --check` and report known limitations.
 
 ## Repository structure
 
@@ -35,8 +38,8 @@ Node 20+ and Bun 1.1+ are supported; pnpm/npm remain supported for generated pro
 
 ## Commit and PRs
 
-Use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`). PRs should state behavior, verification commands, and remaining limitations.
+Use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`). PRs should state behavior, verification commands, and remaining limitations; the pull request template lists the checklist.
 
 ## Release
 
-The packages follow the `0.x` development line (current: `0.1.0`); all six packages are versioned together. Use Changesets for versioning; do not run `npm publish` without passing authentication, dry-run, and full verification gates. See [docs/publishing.md](docs/publishing.md).
+The packages follow the `0.x` development line; all packages are versioned together. Use Changesets for versioning; do not run `npm publish` without passing authentication, dry-run, and full verification gates. See [docs/publishing.md](docs/publishing.md).

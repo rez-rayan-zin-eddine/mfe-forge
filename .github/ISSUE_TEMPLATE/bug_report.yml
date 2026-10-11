@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in the CLI or a runtime package does not work as documented
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report a bug. Please search existing issues first.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      multiple: true
+      options:
+        - mfe-forge (CLI)
+        - '@mfe-forge/core'
+        - '@mfe-forge/router'
+        - '@mfe-forge/store'
+        - '@mfe-forge/design'
+        - '@mfe-forge/testing'
+        - Generated project template
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `npx mfe-forge --version`, or the installed `@mfe-forge/*` version
+      placeholder: 0.1.1
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Commands or a minimal repository that reproduces the problem.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Diagnostics
+      description: Output of `npx mfe-forge doctor --json`, run from the project root.
+      render: json
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node.js version and package manager (with versions)
+      placeholder: Ubuntu 24.04, Node 22.12, bun 1.4.2
+    validations:
+      required: true

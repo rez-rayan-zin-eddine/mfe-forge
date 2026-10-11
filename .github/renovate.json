@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommitTypeAll(chore)"],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "ignorePaths": ["packages/cli/src/templates/**"],
+  "packageRules": [
+    {
+      "groupName": "react",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom",
+        "react-router-dom",
+        "@testing-library/react"
+      ]
+    },
+    {
+      "groupName": "vite and vitest",
+      "matchPackageNames": ["vite", "vitest", "@vitest/**", "@vitejs/**", "vitepress"]
+    },
+    {
+      "groupName": "module federation",
+      "matchPackageNames": ["@module-federation/**", "@originjs/vite-plugin-federation"]
+    },
+    { "groupName": "changesets", "matchPackageNames": ["@changesets/**"] },
+    {
+      "groupName": "lint and format",
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/**",
+        "typescript-eslint",
+        "eslint-plugin-react",
+        "prettier"
+      ]
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    { "matchDepTypes": ["peerDependencies"], "enabled": false }
+  ]
+}
