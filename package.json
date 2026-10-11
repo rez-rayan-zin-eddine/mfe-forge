@@ -22,7 +22,9 @@
     "docs:preview": "vitepress preview docs",
     "dev:test-scope:test-app": "bun --filter test-scope-test-app dev",
     "dev:test-scope:host": "bun --filter test-scope-host dev",
-    "dev:default:test-pkg": "bun --filter default-test-pkg dev"
+    "dev:default:test-pkg": "bun --filter default-test-pkg dev",
+    "type-check": "turbo run type-check",
+    "check:package": "turbo run check:package"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
@@ -30,6 +32,7 @@
     "eslint": "^9.0.0",
     "eslint-plugin-react": "^7.35.0",
     "prettier": "^3.2.5",
+    "publint": "0.3.12",
     "turbo": "^2.0.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.0.0",

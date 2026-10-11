@@ -7,12 +7,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./tokens": {
-      "import": "./dist/tokens.js",
-      "types": "./dist/tokens.d.ts"
+      "types": "./dist/tokens.d.ts",
+      "import": "./dist/tokens.js"
     }
   },
   "files": [
@@ -22,7 +22,8 @@
     "build": "tsup src/index.ts src/tokens.ts --format esm --dts",
     "dev": "tsup src/index.ts src/tokens.ts --format esm --dts --watch",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:package": "publint --strict"
   },
   "devDependencies": {
     "jsdom": "^24.1.0",
@@ -36,11 +37,15 @@
   "homepage": "https://rez-rayan-zin-eddine.github.io/mfe-forge/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
+    "url": "git+https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
     "directory": "packages/design"
   },
   "bugs": {
     "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

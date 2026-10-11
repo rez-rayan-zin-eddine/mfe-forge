@@ -7,20 +7,20 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./error-boundary": {
-      "import": "./dist/error-boundary.js",
-      "types": "./dist/error-boundary.d.ts"
+      "types": "./dist/error-boundary.d.ts",
+      "import": "./dist/error-boundary.js"
     },
     "./event-bus": {
-      "import": "./dist/event-bus.js",
-      "types": "./dist/event-bus.d.ts"
+      "types": "./dist/event-bus.d.ts",
+      "import": "./dist/event-bus.js"
     },
     "./loader": {
-      "import": "./dist/loader.js",
-      "types": "./dist/loader.d.ts"
+      "types": "./dist/loader.d.ts",
+      "import": "./dist/loader.js"
     }
   },
   "files": [
@@ -30,7 +30,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:package": "publint --strict"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -54,11 +55,15 @@
   "homepage": "https://rez-rayan-zin-eddine.github.io/mfe-forge/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
+    "url": "git+https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
     "directory": "packages/core"
   },
   "bugs": {
     "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
