@@ -1,6 +1,6 @@
 # Publishing guide
 
-MFE Forge publishes six packages as one fixed version group: `mfe-forge` (CLI) and `@mfe-forge/core`, `router`, `store`, `design`, `testing`. The group is configured in `.changeset/config.json`.
+MFE Forge publishes its packages as one fixed version group: `mfe-forge` (CLI) and `@mfe-forge/core`, `router`, `store`, `design`, `testing`. The group is configured in `.changeset/config.json`.
 
 ## Version line
 
@@ -15,9 +15,11 @@ The current release line is `0.x`, starting at `0.1.0`. Earlier npm versions (`2
 
 ```bash
 bun install --frozen-lockfile
+bun run lint
+bun run type-check
 bun run build
 bun run test
-bun run lint
+bun run check:package
 bun run docs:build
 ```
 
@@ -39,7 +41,22 @@ bun release
 
 `bun release` maps to `changeset publish`. It publishes only package versions that are not already on npm and requires an authenticated npm account/token.
 
-The `Release` GitHub workflow runs the same flow on every push to `main` using the `NPM_CONFIG_TOKEN` repository secret: it opens a "Version Packages" pull request while changesets are pending, and publishes once that pull request is merged. Keep that secret scoped to an account that owns all six packages.
+The `Release` GitHub workflow runs the same flow on every push to `main`. It installs the pinned Bun version, runs lint, type-check, build, test and `check:package`, then uses `changesets/action`: while changesets are pending it opens a "chore(release): version packages" pull request, and once that pull request is merged it publishes and creates GitHub releases. Changelog entries link to the pull request and author (`@changesets/changelog-github`), so running `changeset version` locally requires a `GITHUB_TOKEN` (for example `GITHUB_TOKEN=$(gh auth token) bun version-packages`).
+
+Packages are published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements) (`NPM_CONFIG_PROVENANCE=true`, `id-token: write`). Provenance is only generated in CI; a local `bun release` publishes without it.
+
+### Authentication: moving to trusted publishing
+
+The workflow currently authenticates with the `NPM_CONFIG_TOKEN` repository secret, which must belong to an account that owns every package. The target setup is [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), which removes the long-lived token:
+
+1. For each package on npmjs.com: **Settings → Trusted Publisher → GitHub Actions**, repository `rez-rayan-zin-eddine/mfe-forge`, workflow `release.yml`.
+2. Publish one release through the workflow and confirm `npm view <package>@<version> dist.attestations` shows a provenance attestation.
+3. Remove the `NPM_TOKEN`/`NODE_AUTH_TOKEN` lines from `release.yml`, delete the `NPM_CONFIG_TOKEN` secret, and revoke the token on npmjs.com.
+4. Set each package to **Require two-factor authentication and disallow tokens**.
+
+### Pull request checks
+
+The `CI` workflow runs three jobs: `verify` (lint, type-check, build, test, `check:package`), `docs` (VitePress build with dead-link checking), and `changeset-check`, which fails a pull request that changes `packages/*/src` or a package manifest without adding a changeset.
 
 ## Known release gaps
 
