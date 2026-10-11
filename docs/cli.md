@@ -55,7 +55,7 @@ Run `sync --dry-run --diff --json` before committing generated changes. A second
 - `inspect <app> [--json]` — inspect one discovered app.
 - `deps [--check] [--shared] [--json]` — inspect configured shared dependencies and version mismatches.
 - `check [--json]` — validate manifest ports and duplicate app names.
-- `doctor` — run Node, lockfile, port, host, and workspace checks.
+- `doctor [--json]` — run Node, lockfile, port, host, and workspace checks. Exits with code `2` when any check fails. The JSON report has the shape `{ ok, summary: { pass, warn, fail }, checks: [{ id, status, message, hint? }] }`; include it when filing bug reports.
 - `migrate [--check] [--json]` — inspect/apply the manifest-v1 migration.
 
 ## Configuration
