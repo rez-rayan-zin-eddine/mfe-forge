@@ -4,15 +4,15 @@
   "description": "CLI for scaffolding and managing Micro Frontend architectures",
   "type": "module",
   "bin": {
-    "mfe-forge": "./dist/bin/index.js",
-    "mfe": "./dist/bin/index.js"
+    "mfe-forge": "dist/bin/index.js",
+    "mfe": "dist/bin/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -23,7 +23,8 @@
     "build": "tsup src/bin/index.ts src/index.ts --format esm --dts --clean --shims",
     "dev": "tsup src/bin/index.ts src/index.ts --format esm --dts --watch --shims",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:package": "publint --strict"
   },
   "dependencies": {
     "chalk": "^5.3.0",
@@ -65,7 +66,7 @@
   "homepage": "https://rez-rayan-zin-eddine.github.io/mfe-forge/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
+    "url": "git+https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
     "directory": "packages/cli"
   },
   "bugs": {

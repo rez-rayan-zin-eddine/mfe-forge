@@ -7,8 +7,8 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -18,12 +18,13 @@
     "build": "tsup src/index.tsx --format esm --dts --external react,@testing-library/react",
     "dev": "tsup src/index.tsx --format esm --dts --watch --external react,@testing-library/react",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:package": "publint --strict"
   },
   "peerDependencies": {
     "@testing-library/react": "^16.0.0",
     "react": "^19.0.0",
-    "vitest": "^1.5.0"
+    "vitest": ">=1.5.0 <5"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
@@ -40,11 +41,15 @@
   "homepage": "https://rez-rayan-zin-eddine.github.io/mfe-forge/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
+    "url": "git+https://github.com/rez-rayan-zin-eddine/mfe-forge.git",
     "directory": "packages/testing"
   },
   "bugs": {
     "url": "https://github.com/rez-rayan-zin-eddine/mfe-forge/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
