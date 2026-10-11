@@ -36,7 +36,8 @@ describe('MFErrorBoundary', () => {
     const rendered = boundary.render()
 
     expect(fallback).toHaveBeenCalledWith(
-      expect.objectContaining({ error, remoteName: 'checkout/cart' })
+      expect.objectContaining({ error, remoteName: 'checkout/cart' }),
+      expect.any(Function)
     )
     expect(React.isValidElement(rendered)).toBe(true)
   })

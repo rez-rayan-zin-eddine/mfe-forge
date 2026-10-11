@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, type ReactNode } from 'react'
+import React, { lazy, Suspense, useState, type ReactNode } from 'react'
 import { MFErrorBoundary } from './error-boundary.js'
 import type { RemoteComponentProps } from './types.js'
 
@@ -64,22 +64,31 @@ export function RemoteLoader({
   fallback,
   props = {},
 }: RemoteComponentProps) {
-  const LazyComponent = getRemoteComponent(remoteName, moduleName)
-
   return (
     <MFErrorBoundary
       remoteName={remoteName}
-      fallback={
-        <div style={{ padding: '2rem', textAlign: 'center' }}>
-          <p>Failed to load {remoteName}</p>
-        </div>
-      }
+      // A rejected lazy() import stays rejected; evict it so the retry fetches again
+      onReset={() => evictRemoteComponent(remoteName, moduleName)}
     >
       <Suspense fallback={fallback || <DefaultFallback remoteName={remoteName} />}>
-        <LazyComponent {...props} />
+        <CachedRemote remoteName={remoteName} moduleName={moduleName} props={props} />
       </Suspense>
     </MFErrorBoundary>
   )
+}
+
+/** Looks the lazy component up at render time, so a reset after eviction picks up a fresh import. */
+function CachedRemote({
+  remoteName,
+  moduleName,
+  props,
+}: {
+  remoteName: string
+  moduleName: string
+  props: Record<string, unknown>
+}) {
+  const LazyComponent = getRemoteComponent(remoteName, moduleName)
+  return <LazyComponent {...props} />
 }
 
 /**
@@ -105,11 +114,14 @@ export function LazyRemote(
   factory: () => Promise<{ default: React.ComponentType<Record<string, unknown>> }>,
   options?: { fallback?: ReactNode; remoteName?: string }
 ) {
-  const Component = lazy(factory)
+  const initial = lazy(factory)
 
   return function LazyRemoteWrapper(props: Record<string, unknown>) {
+    // A rejected lazy() import stays rejected, so a retry needs a new lazy component
+    const [Component, setComponent] = useState(() => initial)
+
     return (
-      <MFErrorBoundary remoteName={options?.remoteName}>
+      <MFErrorBoundary remoteName={options?.remoteName} onReset={() => setComponent(() => lazy(factory))}>
         <Suspense
           fallback={options?.fallback || <DefaultFallback remoteName={options?.remoteName} />}
         >
@@ -120,35 +132,41 @@ export function LazyRemote(
   }
 }
 
-/** Default loading spinner shown while a remote component is being fetched. */
+/** Default loading indicator shown while a remote component is being fetched. */
 function DefaultFallback({ remoteName }: { remoteName?: string }) {
   return (
     <div
+      role="status"
+      aria-live="polite"
+      data-testid="mfe-loading"
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '200px',
-        color: '#6b7280',
+        color: '#4b5563',
       }}
     >
       <div style={{ textAlign: 'center' }}>
         <div
+          aria-hidden="true"
+          className="mfe-loading-spinner"
           style={{
             width: '40px',
             height: '40px',
             border: '3px solid #e5e7eb',
             borderTopColor: '#3b82f6',
             borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
             margin: '0 auto 1rem',
           }}
         />
         <p>Loading {remoteName || 'component'}...</p>
       </div>
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        .mfe-loading-spinner { animation: mfe-spin 1s linear infinite; }
+        @keyframes mfe-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+          .mfe-loading-spinner { animation: none; }
         }
       `}</style>
     </div>
