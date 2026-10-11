@@ -29,7 +29,7 @@
     "jsdom": "^24.1.0",
     "tsup": "^8.0.0",
     "typescript": "~5.8.3",
-    "vitest": "^1.5.0"
+    "vitest": "^4.1.11"
   },
   "publishConfig": {
     "access": "public"

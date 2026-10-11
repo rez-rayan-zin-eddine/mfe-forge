@@ -29,7 +29,7 @@
     "eslint-plugin-react": "^7.35.0",
     "prettier": "^3.2.5",
     "publint": "0.3.12",
-    "turbo": "^2.0.0",
+    "turbo": "^2.11.7",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.0.0",
     "vitepress": "^1.0.0"
@@ -37,5 +37,8 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "bun@1.4.2"
+  "packageManager": "bun@1.4.2",
+  "overrides": {
+    "vue": "^3.5.43"
+  }
 }
