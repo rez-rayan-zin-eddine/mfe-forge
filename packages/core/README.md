@@ -25,7 +25,9 @@ import { MFErrorBoundary } from '@mfe-forge/core'
 </MFErrorBoundary>
 ```
 
-`fallback` may be a node or a function receiving `{ error, componentStack, remoteName }`. The default fallback renders a retry button and carries `data-testid="mfe-error"` (used by `@mfe-forge/testing`'s E2E helpers).
+`fallback` may be a node or a function receiving `({ error, componentStack, remoteName }, reset)`; call `reset()` to clear the error and render the children again. `onReset` runs first, so you can discard failed state (such as a cached rejected import) before the retry.
+
+The default fallback is accessible: it is a `role="alert"` region, so screen readers announce the failure, with a "Try again" button. It carries `data-testid="mfe-error"` (used by `@mfe-forge/testing`'s E2E helpers). The default loading UI is a `role="status"` live region (`data-testid="mfe-loading"`) whose spinner is hidden from assistive technology and stops animating under `prefers-reduced-motion`.
 
 ## Event bus
 
@@ -54,7 +56,7 @@ const CartApp = LazyRemote(() => import('cartApp/App'), { remoteName: 'checkout/
 <RemoteLoader remoteName="cartApp" moduleName="App" props={{ userId }} fallback={<Spinner />} />
 ```
 
-Both wrap the remote in `Suspense` and `MFErrorBoundary`. `RemoteLoader` caches lazy components per `remoteName/moduleName` in a bounded LRU cache (`MAX_CACHE_SIZE = 100`). Use `clearRemoteComponentCache()`, `evictRemoteComponent(remote, module?)`, `hasRemoteComponent(remote, module?)` and `getRemoteComponentCacheSize()` to manage it — for example to force a reload after a remote is redeployed.
+Both wrap the remote in `Suspense` and `MFErrorBoundary`. "Try again" performs a real retry: `RemoteLoader` evicts the failed cache entry and `LazyRemote` creates a new lazy component, so the remote is fetched again (a rejected `React.lazy` import otherwise stays rejected). `RemoteLoader` caches lazy components per `remoteName/moduleName` in a bounded LRU cache (`MAX_CACHE_SIZE = 100`). Use `clearRemoteComponentCache()`, `evictRemoteComponent(remote, module?)`, `hasRemoteComponent(remote, module?)` and `getRemoteComponentCacheSize()` to manage it — for example to force a reload after a remote is redeployed.
 
 ## Remote registry
 

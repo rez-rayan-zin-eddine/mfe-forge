@@ -4,12 +4,20 @@ import type { MFEErrorInfo } from './types.js'
 interface Props {
   /** Child components to render when no error is present */
   children: ReactNode
-  /** Custom fallback UI: a static element or a function receiving error info */
-  fallback?: ReactNode | ((error: MFEErrorInfo) => ReactNode)
+  /**
+   * Custom fallback UI: a static element, or a function receiving the error info
+   * and a `reset` callback that clears the error and re-renders the children.
+   */
+  fallback?: ReactNode | ((error: MFEErrorInfo, reset: () => void) => ReactNode)
   /** Name of the remote MFE this boundary wraps (for error reporting) */
   remoteName?: string
   /** Callback invoked when an error is caught */
   onError?: (info: MFEErrorInfo) => void
+  /**
+   * Called when the boundary is reset (e.g. the user presses "Try again"), before the
+   * children re-render. Use it to discard cached failed state such as a rejected lazy import.
+   */
+  onReset?: () => void
 }
 
 interface State {
@@ -27,7 +35,8 @@ interface State {
  * - Custom fallback components (static or dynamic)
  * - Error reporting via `onError` callback
  * - Remote MFE identification via `remoteName` prop
- * - A "Try again" button to reset the error state
+ * - An accessible default fallback (`role="alert"`) with a "Try again" button
+ * - `onReset` to discard failed state (e.g. a rejected lazy import) before retrying
  *
  * @example
  * ```tsx
@@ -40,6 +49,13 @@ export class MFErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
     this.state = { hasError: false, error: null, errorInfo: null }
+    this.reset = this.reset.bind(this)
+  }
+
+  /** Clears the error state and re-renders the children. */
+  reset() {
+    this.props.onReset?.()
+    this.setState({ hasError: false, error: null, errorInfo: null })
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -75,7 +91,7 @@ export class MFErrorBoundary extends Component<Props, State> {
       }
 
       if (typeof fallback === 'function') {
-        return fallback(errorInfo)
+        return fallback(errorInfo, this.reset)
       }
 
       if (fallback) {
@@ -89,14 +105,13 @@ export class MFErrorBoundary extends Component<Props, State> {
           data-remote-name={remoteName}
           style={styles.container}
         >
-          <div style={styles.card}>
-            <h2 style={styles.title}>⚠️ Something went wrong</h2>
+          <div role="alert" style={styles.card}>
+            <h2 style={styles.title}>
+              <span aria-hidden="true">⚠️ </span>Something went wrong
+            </h2>
             {remoteName && <p style={styles.remote}>Remote: {remoteName}</p>}
             <p style={styles.message}>{this.state.error?.message}</p>
-            <button
-              style={styles.button}
-              onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
-            >
+            <button type="button" style={styles.button} onClick={this.reset}>
               Try again
             </button>
           </div>
@@ -125,7 +140,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#fef2f2',
   },
   title: {
-    color: '#dc2626',
+    color: '#b91c1c',
     marginBottom: '0.5rem',
     fontSize: '1.25rem',
   },
@@ -140,7 +155,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '1rem',
   },
   button: {
-    background: '#dc2626',
+    background: '#b91c1c',
     color: 'white',
     border: 'none',
     padding: '0.5rem 1rem',

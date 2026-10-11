@@ -15,9 +15,10 @@ function Greeting(props: Record<string, unknown>) {
   return <p>hello {String(props.name ?? 'world')}</p>
 }
 
-/** RemoteLoader has no hooks, so calling it registers the lazy component without importing it. */
+/** Rendering registers the lazy component; the import itself never resolves for these names. */
 function touch(remoteName: string, moduleName?: string) {
-  RemoteLoader({ remoteName, moduleName })
+  render(<RemoteLoader remoteName={remoteName} moduleName={moduleName} />)
+  cleanup()
 }
 
 describe('RemoteLoader component cache', () => {
