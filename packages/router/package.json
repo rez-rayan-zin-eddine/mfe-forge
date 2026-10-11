@@ -1,6 +1,6 @@
 {
   "name": "@mfe-forge/router",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Routing coordination utilities for MFE Forge",
   "type": "module",
   "main": "./dist/index.js",

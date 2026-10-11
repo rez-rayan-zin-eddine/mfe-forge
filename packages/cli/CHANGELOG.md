@@ -1,5 +1,15 @@
 # mfe-forge
 
+## 0.1.1
+
+### Patch Changes
+
+- [#4](https://github.com/rez-rayan-zin-eddine/mfe-forge/pull/4) [`6a23111`](https://github.com/rez-rayan-zin-eddine/mfe-forge/commit/6a231114fc30fca859c3b6ffc1d701b30427892d) Thanks [@rez-rayan-zin-eddine](https://github.com/rez-rayan-zin-eddine)! - `build`, `test` and `dev` now exit non-zero when a delegated task fails (exit code `2`) or an app cannot be resolved (exit code `1`). Previously `build` printed "Build complete" and exited `0` even when apps failed. `build` gains `--bail`, prints a built/failed summary, and rejects unknown apps instead of skipping them. `test [app]` resolves apps through the configured apps directory, and `--unit`/`--e2e` now run the `test:unit`/`test:e2e` scripts instead of forwarding flags the runner rejects. Async command errors are now handled by the top-level error handler, and `--version` prints the version once.
+
+- [#12](https://github.com/rez-rayan-zin-eddine/mfe-forge/pull/12) [`72f9d67`](https://github.com/rez-rayan-zin-eddine/mfe-forge/commit/72f9d674bc9b1155655f5c436240001420fba891) Thanks [@rez-rayan-zin-eddine](https://github.com/rez-rayan-zin-eddine)! - `doctor` gains `--json`, emitting `{ ok, summary, checks: [{ id, status, message, hint? }] }`, and prints a fix hint under each failed check. A failed check now exits with code `2` (task failed) instead of `1`. The checks are exported as `runDoctor()` for programmatic use.
+
+- [#6](https://github.com/rez-rayan-zin-eddine/mfe-forge/pull/6) [`e6cc0ae`](https://github.com/rez-rayan-zin-eddine/mfe-forge/commit/e6cc0aecb05f0e2d07a0d71864fbd6fe7f1bef50) Thanks [@rez-rayan-zin-eddine](https://github.com/rez-rayan-zin-eddine)! - Package metadata fixes: the `types` condition now comes first in every `exports` entry (TypeScript resolves conditions in order), runtime packages declare `"sideEffects": false` for better tree-shaking, every package declares `engines.node >=20`, `repository.url` and `bin` paths are normalized so npm no longer rewrites them on publish.
+
 ## 0.1.0
 
 First release of the `0.x` development line under new ownership (repository: rez-rayan-zin-eddine/mfe-forge). Versions `2.0.0`–`8.1.0` were prototype releases and are deprecated; all six packages are versioned together.
