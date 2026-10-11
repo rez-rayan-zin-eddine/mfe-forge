@@ -2,7 +2,8 @@ import fs from 'fs-extra'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { discoverApps, discoverHosts } from './discovery.js'
+import { discoverApps, discoverHosts, resolveApp } from './discovery.js'
+import type { RemoteApp } from '../types/index.js'
 
 describe('discovery', () => {
   it('discovers remote apps and hosts from a scoped workspace', async () => {
@@ -45,5 +46,23 @@ describe('discovery', () => {
     } finally {
       await fs.remove(root)
     }
+  })
+})
+
+describe('resolveApp', () => {
+  const mk = (name: string) => ({ name }) as RemoteApp
+  const apps = [mk('shop/cart'), mk('admin/cart'), mk('admin/users')]
+
+  it('matches a fully qualified name', () => {
+    expect(resolveApp(apps, 'shop/cart')?.name).toBe('shop/cart')
+  })
+  it('matches an unambiguous bare name', () => {
+    expect(resolveApp(apps, 'users')?.name).toBe('admin/users')
+  })
+  it('returns undefined for an ambiguous bare name', () => {
+    expect(resolveApp(apps, 'cart')).toBeUndefined()
+  })
+  it('returns undefined for an unknown name', () => {
+    expect(resolveApp(apps, 'nope')).toBeUndefined()
   })
 })

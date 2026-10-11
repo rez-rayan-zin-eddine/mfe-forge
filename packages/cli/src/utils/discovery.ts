@@ -105,3 +105,17 @@ export function discoverHosts(context: ProjectContext): string[] {
 
   return hosts
 }
+
+/**
+ * Resolves a user-supplied app reference (`scope/name` or bare `name`) to a discovered app.
+ * A bare name matches only when it is unambiguous across scopes.
+ *
+ * @param apps - Apps returned by {@link discoverApps}
+ * @param ref - App reference from the command line
+ * @returns The matching app, or `undefined` when nothing (or more than one app) matches
+ */
+export function resolveApp(apps: RemoteApp[], ref: string): RemoteApp | undefined {
+  if (ref.includes('/')) return apps.find((app) => app.name === ref)
+  const matches = apps.filter((app) => app.name.endsWith(`/${ref}`))
+  return matches.length === 1 ? matches[0] : undefined
+}
