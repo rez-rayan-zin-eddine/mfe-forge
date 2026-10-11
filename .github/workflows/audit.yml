@@ -14,6 +14,8 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - run: npm install --global bun@1.1.0
-      - run: bun install
-      - run: npm audit --omit=dev --audit-level=high
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun audit --audit-level=high

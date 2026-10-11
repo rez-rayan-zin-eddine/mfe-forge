@@ -5,8 +5,7 @@
   "description": "Production-ready Micro Frontend framework for Vite + React + Module Federation",
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "templates/*"
+    "packages/*"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -20,9 +19,6 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "dev:test-scope:test-app": "bun --filter test-scope-test-app dev",
-    "dev:test-scope:host": "bun --filter test-scope-host dev",
-    "dev:default:test-pkg": "bun --filter default-test-pkg dev",
     "type-check": "turbo run type-check",
     "check:package": "turbo run check:package"
   },
@@ -39,9 +35,7 @@
     "vitepress": "^1.0.0"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "bun": ">=1.1.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=20.0.0"
   },
-  "packageManager": "bun@1.1.0"
+  "packageManager": "bun@1.4.2"
 }
