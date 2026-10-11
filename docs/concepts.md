@@ -8,11 +8,11 @@ MFE Forge combines a CLI, generated project conventions, and runtime packages fo
 Agent OS → Project OS (CLI/config/manifest/discovery/sync) → Runtime OS (loader/events/store/router)
 ```
 
-The Agent OS is documented in `AGENTS.md` and `.agents/`. The Project OS is exposed through `status`, `graph`, `inspect`, `deps`, `check`, `doctor`, `sync`, and `migrate`. The Runtime OS lives in the published package source under `packages/`.
+The Agent OS is documented in the repository's `AGENTS.md` and `.agents/`. The Project OS is exposed through `status`, `graph`, `inspect`, `deps`, `check`, `doctor`, `sync`, and `migrate`. The Runtime OS lives in the published package source under `packages/`.
 
 ## Current CLI package commands
 
-`init`, `generate`, `dev`, `build`, `test`, `sync`, `doctor`, `config`, `status`, `graph`, `inspect`, `deps`, `check`, and `migrate`. See [docs/cli.md](docs/cli.md) for actual flags and limitations.
+`init`, `generate`, `dev`, `build`, `test`, `sync`, `doctor`, `config`, `status`, `graph`, `inspect`, `deps`, `check`, and `migrate`. See [CLI reference](./cli.md) for actual flags and limitations.
 
 ## Stability statement
 

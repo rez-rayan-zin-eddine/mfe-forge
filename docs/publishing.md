@@ -57,3 +57,18 @@ Build the VitePress site locally with `bun run docs:build`. The `Deploy Docs to 
 ```bash
 gh api -X PUT repos/<owner>/mfe-forge/pages -f build_type=workflow
 ```
+
+## Release checklist
+
+Do not publish until every gate is checked.
+
+- [ ] Every user-visible change has a changeset; the fixed package group is reviewed.
+- [ ] `bun install --frozen-lockfile` succeeds.
+- [ ] `bun run lint`, `bun run type-check`, `bun run build`, `bun run test` and `bun run check:package` succeed.
+- [ ] `bun run docs:build` succeeds.
+- [ ] `npm pack --dry-run` inspected for every publishable package.
+- [ ] Generated fixture flow passes from a clean directory: `npx mfe-forge@<version> init` → `generate` → install → build.
+- [ ] `git diff --check` is clean and PR review is complete.
+- [ ] Published versions verified with `npm view <name>@<version>` and `npx mfe-forge@<version> --version` (run outside the repository, otherwise `npx` resolves the workspace).
+
+The release workflow uses Changesets on `main`; a workflow run is not evidence that a package was published until its job succeeds.

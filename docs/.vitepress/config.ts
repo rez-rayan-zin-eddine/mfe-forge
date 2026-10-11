@@ -4,7 +4,7 @@ export default defineConfig({
   title: 'MFE Forge',
   description: 'CLI and runtime packages for Vite + React micro-frontends with Module Federation',
   base: '/mfe-forge/',
-  ignoreDeadLinks: true,
+  ignoreDeadLinks: false,
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/mfe-forge/logo.svg' }]],
 
   themeConfig: {
@@ -22,8 +22,11 @@ export default defineConfig({
           text: 'Getting Started',
           items: [
             { text: 'Introduction', link: '/getting-started' },
+            { text: 'Concepts', link: '/concepts' },
             { text: 'Installation', link: '/installation' },
             { text: 'Quick Start', link: '/quick-start' },
+            { text: 'Example Project', link: '/tutorials/example-project' },
+            { text: 'Comparison', link: '/comparison' },
           ],
         },
         {
