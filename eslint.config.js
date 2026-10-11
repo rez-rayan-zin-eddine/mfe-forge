@@ -3,7 +3,7 @@ import ts from 'typescript-eslint'
 import react from 'eslint-plugin-react'
 
 export default [
-  { ignores: ['**/dist/**', 'docs/.vitepress/dist/**', 'docs/.vitepress/cache/**', 'packages/cli/src/templates/**', 'node_modules/**', '.agents/**'] },
+  { ignores: ['**/dist/**', 'docs/.vitepress/dist/**', 'docs/.vitepress/cache/**', 'packages/cli/src/templates/**', 'node_modules/**', '.agents/**', '.claude/**'] },
   js.configs.recommended,
   ...ts.configs.recommended,
   {
