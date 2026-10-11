@@ -1,0 +1,17 @@
+name: Documentation issue
+description: Something in the docs is wrong, missing or unclear
+labels: [docs, needs-triage]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: URL or file path of the page
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
