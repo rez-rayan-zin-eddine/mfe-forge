@@ -1,91 +1,127 @@
-# Publishing guide
+# Building and deploying
 
-MFE Forge publishes its packages as one fixed version group: `mfe-forge` (CLI) and `@mfe-forge/core`, `router`, `store`, `design`, `testing`. The group is configured in `.changeset/config.json`.
+This page explains how to produce production builds of your hosts and remotes and how to deploy them. For how the MFE Forge packages themselves are released to npm, see [Contributing](./contributing.md#release-process).
 
-## Version line
+::: warning Production remote URLs are manual today
+The CLI always writes remote URLs as `http://localhost:<port>/assets/remoteEntry.js`, and `mfe-forge sync` rewrites them back to that form. There is no per-environment URL support yet (the manifest's `environments` field is always empty). Plan a build-time override as described in [Point hosts at deployed remotes](#point-hosts-at-deployed-remotes).
+:::
 
-The current release line is `0.x`, starting at `0.1.0`. Earlier npm versions (`2.0.0`–`8.1.0`) were published during the project's prototype phase, are deprecated on npm, and should not be used. `0.x` signals that the API may still change between minor versions.
-
-## Before publishing
-
-1. Choose and approve the next semver version for the fixed package group.
-2. Add a Changeset describing user-visible changes.
-3. Ensure npm authentication and publish rights are available: `npm whoami` and `npm owner ls mfe-forge`.
-4. Run the full verification matrix:
+## Build
 
 ```bash
-bun install --frozen-lockfile
-bun run lint
-bun run type-check
-bun run build
-bun run test
-bun run check:package
-bun run docs:build
+mfe-forge build                    # every app under apps/<scope>/<name>
+mfe-forge build shop/catalog       # one app (a bare name works when it is unambiguous)
+mfe-forge build --scope shop       # every app in one scope
+mfe-forge build --bail             # stop at the first failure
 ```
 
-5. Run package dry runs and inspect tarballs:
+For each target, `build` runs `<pm> run build` in the app directory, one app after another. The generated script is `tsc -b && vite build`, so type errors fail the build. The command prints `✔ built N, ✖ failed M` (and `○ skipped K` with `--bail`) and exits with code `2` if anything failed, which makes it safe for CI. `--parallel` and `--analyze` are accepted but currently have no effect. See [`build`](./cli/build.md).
+
+### Output
+
+Each app writes to its own `dist/`:
+
+```text
+apps/shop/catalog/dist/
+├── index.html                 # standalone entry of the remote
+└── assets/
+    ├── remoteEntry.js         # federation entry consumed by hosts (remotes only)
+    └── ...                    # hashed JS/CSS chunks
+```
+
+The templates set `build.target: 'esnext'`, `minify: false` and `cssCodeSplit: false`. Enable minification in each `vite.config.ts` for production if you want it; the config file's `build.minify` setting is not applied to generated apps.
+
+### Preview a build
 
 ```bash
-for package in packages/*; do (cd "$package" && npm pack --dry-run); done
+npm run preview --workspace=shop-catalog
 ```
 
-## Changesets workflow
+The `preview` script serves `dist/` on the app's port with CORS enabled, which is the closest local equivalent of production.
+
+## Point hosts at deployed remotes
+
+The host resolves remotes from the literal URLs in its `vite.config.ts`. `sync` only understands an inline `remotes: { ... }` object inside the federation call and regenerates it with localhost URLs, so you cannot move the URLs into a variable or environment lookup without breaking `sync`. The workable pattern today is to keep the CLI-managed inline block in the repository and replace the localhost origins in CI before building the host:
 
 ```bash
-bun changeset
-bun version-packages
-bun run build
-bun run test
-bun release
+# CI step before building the host
+sed -i "s#http://localhost:3001#https://cdn.example.com/shop/catalog#; s#http://localhost:3002#https://cdn.example.com/shop/cart#" \
+  apps/shop/host/vite.config.ts
+mfe-forge build shop/host
 ```
 
-`bun release` maps to `changeset publish`. It publishes only package versions that are not already on npm and requires an authenticated npm account/token.
+Keep the substitution in CI rather than committing it, so `sync --check` stays clean in the repository. The roadmap replaces this with configuration-driven remotes and runtime manifests (phase B).
 
-The `Release` GitHub workflow runs the same flow on every push to `main`. It installs the pinned Bun version, runs lint, type-check, build, test and `check:package`, then uses `changesets/action`: while changesets are pending it opens a "chore(release): version packages" pull request, and once that pull request is merged it publishes and creates GitHub releases. Changelog entries link to the pull request and author (`@changesets/changelog-github`), so running `changeset version` locally requires a `GITHUB_TOKEN` (for example `GITHUB_TOKEN=$(gh auth token) bun version-packages`).
+## Hosting remotes on a CDN or static host
 
-Packages are published with [npm provenance](https://docs.npmjs.com/generating-provenance-statements) (`NPM_CONFIG_PROVENANCE=true`, `id-token: write`). Provenance is only generated in CI; a local `bun release` publishes without it.
+Remotes are static files. Requirements for any host (S3 + CloudFront, Netlify, Vercel, nginx, GitHub Pages):
 
-### Authentication: moving to trusted publishing
+- **Path:** `remoteEntry.js` must be reachable at the URL configured in the host, which by convention ends in `/assets/remoteEntry.js`. Upload the whole `dist/` folder of each remote, preserving `assets/`.
+- **CORS:** the host fetches the remote's modules from another origin. Serve them with `Access-Control-Allow-Origin` set to your host's origin (or `*` for public assets).
+- **Caching:** hashed chunks under `assets/` can be cached long-term, but `remoteEntry.js` keeps the same name across builds. Serve it with `Cache-Control: no-cache` (or a short max-age) so hosts pick up new deployments.
+- **Base path:** if a remote is deployed under a sub-path (for example `/shop/catalog/`), set Vite's `base` option in that remote's `vite.config.ts` so its chunk URLs resolve correctly.
+- **SPA fallback:** hosts use client-side routing; configure the server to return `index.html` for unknown paths.
 
-The workflow currently authenticates with the `NPM_CONFIG_TOKEN` repository secret, which must belong to an account that owns every package. The target setup is [npm trusted publishing](https://docs.npmjs.com/trusted-publishers), which removes the long-lived token:
+Deploy remotes before the host that references them, or keep the previous remote version online until hosts are updated. Because the `shared` singletons are negotiated at runtime, deploy React upgrades to every app together.
 
-1. For each package on npmjs.com: **Settings → Trusted Publisher → GitHub Actions**, repository `rez-rayan-zin-eddine/mfe-forge`, workflow `release.yml`.
-2. Publish one release through the workflow and confirm `npm view <package>@<version> dist.attestations` shows a provenance attestation.
-3. Remove the `NPM_TOKEN`/`NODE_AUTH_TOKEN` lines from `release.yml`, delete the `NPM_CONFIG_TOKEN` secret, and revoke the token on npmjs.com.
-4. Set each package to **Require two-factor authentication and disallow tokens**.
+## Docker templates
 
-### Pull request checks
+The CLI package ships Docker templates in `packages/cli/src/templates/docker/`: a `Dockerfile`, `nginx.conf` and `docker-compose.yml`. **No command renders them yet.** The `ci.docker` config option and the "Docker Support" choice in `init` are recorded in the config but do not generate files. You can copy the templates manually; they contain Mustache placeholders that you must replace by hand.
 
-The `CI` workflow runs three jobs: `verify` (lint, type-check, build, test, `check:package`), `docs` (VitePress build with dead-link checking), and `changeset-check`, which fails a pull request that changes `packages/*/src` or a package manifest without adding a changeset.
+### Dockerfile
 
-## Known release gaps
+A two-stage build:
 
-- A complete init → generate → install → type-check → build → test → sync fixture matrix is not yet automated.
-- `dev` process supervision and `build --analyze` are not fully implemented (see the [CLI reference](./cli.md)).
+<div v-pre>
 
-## Documentation deployment
+1. `oven/bun:1` copies the root `package.json`, `bun.lock` and the app's `package.json`, runs `bun install`, copies the repository and runs `bun run build --scope {{scope}}`.
+2. `nginx:alpine` copies `apps/{{scope}}/{{app}}/dist` to `/usr/share/nginx/html` and `docker/nginx.conf` to `/etc/nginx/conf.d/default.conf`, and exposes port `80`.
 
-Build the VitePress site locally with `bun run docs:build`. The `Deploy Docs to GitHub Pages` workflow builds `docs/.vitepress/dist` and deploys it with `actions/deploy-pages` whenever `docs/**` changes on `main` (or on manual dispatch).
+Replace `{{scope}}` and `{{app}}` with your values, place `nginx.conf` at `docker/nginx.conf` in the project root, and build from the root so the context includes the workspace:
 
-### GitHub Pages source must be "GitHub Actions"
-
-`actions/deploy-pages` only takes effect when the repository's Pages source is **GitHub Actions** (Settings → Pages → Build and deployment → Source). If the source is "Deploy from a branch", the workflow succeeds but the site keeps serving that branch — this is what caused the documentation site to return 404 while it pointed at an empty legacy `gh-pages` branch. The source can also be set from the CLI:
+</div>
 
 ```bash
-gh api -X PUT repos/<owner>/mfe-forge/pages -f build_type=workflow
+docker build -f apps/shop/catalog/Dockerfile -t shop-catalog .
+docker run -p 3001:80 shop-catalog
 ```
 
-## Release checklist
+The template assumes Bun. With npm or pnpm, change the base image, lock file and install command.
 
-Do not publish until every gate is checked.
+### nginx.conf
 
-- [ ] Every user-visible change has a changeset; the fixed package group is reviewed.
-- [ ] `bun install --frozen-lockfile` succeeds.
-- [ ] `bun run lint`, `bun run type-check`, `bun run build`, `bun run test` and `bun run check:package` succeed.
-- [ ] `bun run docs:build` succeeds.
-- [ ] `npm pack --dry-run` inspected for every publishable package.
-- [ ] Generated fixture flow passes from a clean directory: `npx mfe-forge@<version> init` → `generate` → install → build.
-- [ ] `git diff --check` is clean and PR review is complete.
-- [ ] Published versions verified with `npm view <name>@<version>` and `npx mfe-forge@<version> --version` (run outside the repository, otherwise `npx` resolves the workspace).
+Serves `index.html` as the SPA fallback (`try_files $uri $uri/ /index.html`), caches `/assets/` for one year as `immutable`, and enables gzip for text, CSS, JSON and JavaScript. Two adjustments are recommended for remotes:
 
-The release workflow uses Changesets on `main`; a workflow run is not evidence that a package was published until its job succeeds.
+```nginx
+location = /assets/remoteEntry.js {
+    add_header Cache-Control "no-cache";
+    add_header Access-Control-Allow-Origin "*";
+}
+
+location /assets/ {
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    add_header Access-Control-Allow-Origin "*";
+}
+```
+
+Without the first block, `remoteEntry.js` is cached as immutable for a year and hosts keep loading the old version. Without the CORS header, cross-origin hosts cannot load the remote. Replace `*` with your host origin in production.
+
+### docker-compose.yml
+
+Defines one service per app (a Mustache `apps` section with `camelName`, `scope`, `name` and `port`), each built from `apps/<scope>/<name>/Dockerfile`, mapped to `<port>:80` and attached to a `mfe-network` bridge network. Expand the section by hand into one service per app. Mapping each container to the app's dev port means the localhost remote URLs the CLI writes keep working for a local production-like stack.
+
+## CI
+
+The `init` template's optional GitHub Actions workflow (written when you select "GitHub Actions CI/CD" in the interactive `init`) runs `bun install`, `bun run lint`, `bun run type-check` and `bun run test`. It does not build or deploy. A minimal build job for any package manager:
+
+```yaml
+- run: npm ci
+- run: npx mfe sync --check # fail if hosts are out of date
+- run: npx mfe build --bail # exit code 2 on failure
+- uses: actions/upload-artifact@v4
+  with:
+    name: dist
+    path: apps/*/*/dist
+```
+
+A fuller workflow template with a per-scope build matrix exists in `packages/cli/src/templates/ci/github/`, but like the Docker templates it is not rendered by any command.
