@@ -1,58 +1,46 @@
-# MFE Forge vs Alternatives
+# Comparison
 
-## Comparison with Existing Tools
+MFE Forge sits in a crowded space. This page explains what it does and does not do relative to common alternatives, so you can decide whether it fits. Descriptions of other tools are kept general; check their own documentation for current details.
 
-| Feature               | MFE Forge         | Nx             | Turborepo  | Single SPA | Module Federation CLI |
-| --------------------- | ----------------- | -------------- | ---------- | ---------- | --------------------- |
-| **MFE Scaffolding**   | ✅ Built-in       | ⚠️ Via plugins | ❌ No      | ⚠️ Manual  | ⚠️ Basic              |
-| **Auto-Registration** | ✅ Yes            | ❌ No          | ❌ No      | ❌ No      | ❌ No                 |
-| **Scope-Based**       | ✅ Yes            | ⚠️ Apps/libs   | ❌ No      | ❌ No      | ❌ No                 |
-| **Dev Orchestration** | ✅ Single command | ⚠️ Custom      | ⚠️ Custom  | ⚠️ Custom  | ⚠️ Basic              |
-| **Type Sync**         | ✅ Auto           | ❌ No          | ❌ No      | ❌ No      | ⚠️ Manual             |
-| **Error Boundaries**  | ✅ Runtime SDK    | ❌ No          | ❌ No      | ⚠️ Manual  | ❌ No                 |
-| **Event Bus**         | ✅ Runtime SDK    | ❌ No          | ❌ No      | ⚠️ Manual  | ❌ No                 |
-| **Design System**     | ✅ Template       | ⚠️ Via plugins | ❌ No      | ❌ No      | ❌ No                 |
-| **Testing Utils**     | ✅ MFE-specific   | ⚠️ Generic     | ⚠️ Generic | ⚠️ Generic | ❌ No                 |
-| **CI/CD Templates**   | ✅ Generated      | ⚠️ Custom      | ⚠️ Custom  | ❌ No      | ❌ No                 |
-| **Docker Support**    | ✅ Generated      | ❌ No          | ❌ No      | ❌ No      | ❌ No                 |
-| **Port Management**   | ✅ Auto           | ❌ No          | ❌ No      | ❌ No      | ❌ No                 |
-| **Package Manager**   | ✅ npm/pnpm/Bun   | ⚠️ npm/pnpm    | ⚠️ All     | ⚠️ All     | ⚠️ npm                |
+## What MFE Forge is
 
-## When to Use MFE Forge
+- A **convention-based scaffolder and synchroniser** for Vite + React 19 micro frontends that use Module Federation through `@originjs/vite-plugin-federation`.
+- A set of **small runtime helpers** (error boundary, lazy remote loading, event bus, Zustand stores, router helpers, tokens, test utilities).
+- **Pre-1.0.** APIs and templates may change between minor versions.
 
-### Use MFE Forge when:
+## What it is not
 
-- You're building a **new** Micro Frontend architecture
-- You want **convention over configuration**
-- You need **scope-based organization** (teams/products)
-- You want **auto-discovery** of remotes
-- You need **cross-MFE communication** patterns
-- You want opinionated, ready-to-run templates out of the box (pre-1.0; see [Concepts](./concepts.md) for maturity)
+- Not a build system or task runner with caching. `build` runs each app's `build` script sequentially.
+- Not a federation runtime. Loading is done by the federation plugin; MFE Forge generates its configuration.
+- Not framework-agnostic. Templates are React-only. The config schema accepts `vue` and `svelte` as `defaults.framework` values, but no templates exist for them.
+- Not a deployment platform. Production remote URLs are not managed yet; see [Publishing](./publishing.md).
 
-### Use Nx when:
+## At a glance
 
-- You need a **monorepo** for libraries (not just MFEs)
-- You want **advanced caching** and task orchestration
-- You need **polyglot** support (Node, Python, Go, etc.)
-- You're building **full-stack** applications
+| Capability                                       | MFE Forge (0.x)                                                    | Nx                                                | Turborepo                         | single-spa                                  | Module Federation tooling (`@module-federation/*`) |
+| ------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------- | --------------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| Primary purpose                                  | MFE scaffolding and host/remote sync for Vite + React              | Monorepo build system with generators and plugins | Monorepo task runner with caching | Framework-agnostic MFE router and lifecycle | Federation runtime and bundler plugins             |
+| Generates hosts and remotes                      | Yes (`generate host`, `generate app`)                              | Yes, through its Module Federation generators     | No                                | Through its own CLI                         | Not the focus                                      |
+| Keeps host `remotes` in sync with the filesystem | Yes, regex-based (`sync`)                                          | Through its own conventions                       | No                                | Not applicable (import maps)                | No                                                 |
+| Remote type declarations                         | Generic `ComponentType` declarations written by `sync`             | Depends on setup                                  | No                                | No                                          | MF 2.0 can generate types from remotes             |
+| Task caching                                     | No                                                                 | Yes                                               | Yes                               | No                                          | No                                                 |
+| Bundlers                                         | Vite 5.4 only                                                      | Several                                           | Any                               | Any                                         | Webpack, Rspack, Vite and others                   |
+| Frameworks                                       | React 19                                                           | Many                                              | Any                               | Many                                        | Any                                                |
+| Runtime helpers                                  | Error boundary, loader, event bus, stores, router, tokens, testing | Not in scope                                      | Not in scope                      | Lifecycles, parcels                         | Runtime API and plugins                            |
+| Maturity                                         | Pre-1.0, single maintainer                                         | Mature                                            | Mature                            | Mature                                      | Mature                                             |
 
-### Use Turborepo when:
+## Choosing
 
-- You want **fast task running** with excellent caching
-- You have **existing** MFE setup and just need orchestration
-- You prefer **minimal tooling** overhead
-- You're already using **Vercel** ecosystem
+**Consider MFE Forge if** you are starting a new React + Vite micro frontend setup, want scope-based structure (`apps/<scope>/<name>`) with derived names and ports, and are comfortable with a young tool whose templates you may edit by hand.
 
-### Use Single SPA when:
+**Consider Nx** if you need a full monorepo build system with caching, affected-based CI, many frameworks and an established plugin ecosystem.
 
-- You need **framework-agnostic** MFEs (React + Vue + Angular)
-- You want **runtime** framework switching
-- You're **migrating** from a monolith gradually
+**Consider Turborepo** if you already have working MFEs and mainly need fast, cached task orchestration. MFE Forge and Turborepo do different jobs; the MFE Forge repository itself uses Turborepo for its own tasks.
 
-## MFE Forge Unique Value Proposition
+**Consider single-spa** if you need to mix frameworks (React, Vue, Angular) in one page or migrate a legacy app gradually through import maps.
 
-1. **All-in-One**: CLI + Runtime SDK + Templates + Tooling
-2. **Zero Config**: Auto-detect ports, auto-register remotes, auto-sync types
-3. **Scope Architecture**: Natural team/product boundaries
-4. **Production Ready**: Error boundaries, testing, CI/CD from day one
-5. **Developer Experience**: Single command to run everything
+**Consider using `@module-federation/vite` or the Module Federation 2.0 runtime directly** if you need its manifest, runtime plugins, type generation or Rspack interoperability today. MFE Forge plans to adopt it (roadmap phase B, `0.2.0`), but the current templates use `@originjs/vite-plugin-federation`.
+
+## Combining tools
+
+MFE Forge projects are ordinary npm/Bun/pnpm workspaces. You can add Turborepo or Nx on top for caching, replace the federation plugin in a single app's `vite.config.ts`, or use only the runtime packages (`@mfe-forge/core`, `store`, `router`) in an existing federation setup without the CLI.

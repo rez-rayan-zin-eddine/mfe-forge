@@ -38,18 +38,18 @@ Apps and hosts use `scope/name` paths. Generated projects currently use the pack
 
 ## CLI at a glance
 
-| Command | Purpose |
-| --- | --- |
-| `init [name]` | Create a project skeleton |
-| `generate <type> [name]` | Create apps, hosts, packages, libraries, or design systems |
-| `dev` | Start generated app scripts; multi-app mode currently uses `concurrently` when available |
-| `build [app]` | Build discovered apps |
-| `test [app]` | Run workspace/app test scripts |
-| `sync` | Update host remotes, declarations, and manifest |
-| `status`, `graph`, `inspect` | Inspect topology |
-| `deps`, `check`, `doctor` | Inspect dependencies and health |
-| `config` | Show, validate, and edit configuration |
-| `migrate` | Inspect/apply the manifest migration |
+| Command                      | Purpose                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------- |
+| `init [name]`                | Create a project skeleton                                                                |
+| `generate <type> [name]`     | Create apps, hosts, packages, libraries, or design systems                               |
+| `dev`                        | Start generated app scripts; multi-app mode currently uses `concurrently` when available |
+| `build [app]`                | Build discovered apps                                                                    |
+| `test [app]`                 | Run workspace/app test scripts                                                           |
+| `sync`                       | Update host remotes, declarations, and manifest                                          |
+| `status`, `graph`, `inspect` | Inspect topology                                                                         |
+| `deps`, `check`, `doctor`    | Inspect dependencies and health                                                          |
+| `config`                     | Show, validate, and edit configuration                                                   |
+| `migrate`                    | Inspect/apply the manifest migration                                                     |
 
 Use `mfe-forge <command> --help` for the built command contract.
 
@@ -78,7 +78,7 @@ Read [AGENTS.md](AGENTS.md) for the repository contract and [CONTRIBUTING.md](CO
 
 - [VitePress documentation](https://rez-rayan-zin-eddine.github.io/mfe-forge/)
 - [Getting started](docs/getting-started.md)
-- [CLI reference](docs/cli.md)
+- [CLI reference](docs/cli/index.md)
 - [Configuration](docs/config.md)
 - [Architecture](docs/architecture.md)
 - [Testing](docs/testing.md)
