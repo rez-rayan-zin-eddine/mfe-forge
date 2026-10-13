@@ -1,1 +1,0 @@
-import{_ as e,o as a,c as s,ae as i}from"./chunks/framework.Bsyn99bI.js";const k=JSON.parse('{"title":"CLI Reference","description":"","frontmatter":{},"headers":[],"relativePath":"cli.md","filePath":"cli.md"}'),n={name:"cli.md"};function o(d,t,r,p,l,h){return a(),s("div",null,[...t[0]||(t[0]=[i("",40)])])}const g=e(n,[["render",o]]);export{k as __pageData,g as default};

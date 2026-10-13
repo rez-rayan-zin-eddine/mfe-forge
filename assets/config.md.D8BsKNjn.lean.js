@@ -1,1 +1,0 @@
-import{_ as i,o as a,c as n,ae as e}from"./chunks/framework.Bsyn99bI.js";const E=JSON.parse('{"title":"Configuration","description":"","frontmatter":{},"headers":[],"relativePath":"config.md","filePath":"config.md"}'),l={name:"config.md"};function t(p,s,h,r,o,k){return a(),n("div",null,[...s[0]||(s[0]=[e("",23)])])}const c=i(l,[["render",t]]);export{E as __pageData,c as default};
